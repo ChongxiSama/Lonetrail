@@ -1,0 +1,91 @@
+---
+import ArchiveHeader from "@components/pages/ArchiveHeader.astro";
+import EssayFeed from "@components/pages/EssayFeed.astro";
+import Pagination from "@components/ui/Pagination.astro";
+import type { GetStaticPaths, Page } from "astro";
+import { ESSAYS_PAGE_SIZE } from "../../../constants/constants";
+import I18nKey from "../../../i18n/i18nKey";
+import { localizePath, resolveLocale } from "../../../i18n/locales";
+import { getSiteTitle } from "../../../i18n/site";
+import { i18n } from "../../../i18n/translation";
+import Layout from "../../../layouts/Layout.astro";
+import { type EssayItem, getEssayItems } from "../../../utils/essay-utils";
+
+export const getStaticPaths = (async ({ paginate }) => {
+	const items = await getEssayItems();
+	return paginate(items, { pageSize: ESSAYS_PAGE_SIZE }).filter(
+		(result) => result.props.page.currentPage > 1,
+	);
+}) satisfies GetStaticPaths;
+
+interface Props {
+	page: Page<EssayItem>;
+}
+
+const { page } = Astro.props;
+const locale = resolveLocale(Astro.currentLocale, Astro.url.pathname);
+const t = (key: I18nKey) => i18n(key, locale);
+const localizedItems = await getEssayItems(locale);
+const items =
+	locale === "en" ? localizedItems.slice(page.start, page.end) : page.data;
+const totalCount = locale === "en" ? localizedItems.length : page.total;
+const lastPage =
+	locale === "en"
+		? Math.max(1, Math.ceil(localizedItems.length / ESSAYS_PAGE_SIZE))
+		: page.lastPage;
+const prevHref =
+	page.currentPage === 2
+		? localizePath("/essays/", locale)
+		: page.url.prev
+			? localizePath(page.url.prev, locale)
+			: undefined;
+const essaysLabel = t(I18nKey.essays);
+const pageTitle =
+	page.currentPage > 1
+		? `${essaysLabel} · ${t(I18nKey.pageLabel).replace("{page}", String(page.currentPage))} - ${getSiteTitle(locale)}`
+		: `${essaysLabel} - ${getSiteTitle(locale)}`;
+---
+
+<Layout title={pageTitle} description={`${getSiteTitle(locale)} - ${essaysLabel}`}>
+
+		<ArchiveHeader
+			title={essaysLabel}
+			count={totalCount}
+			variant="dark"
+			lang={locale}
+		/>
+
+		<div class="relative w-full max-w-[840px] px-6 md:px-10 pt-4 pb-3">
+			<div class="flex items-center gap-3">
+				<div class="w-[3px] h-[10px] bg-accent"></div>
+				<span class="font-deco text-[10px] text-hint uppercase tracking-[0.25em]">
+					Stream
+				</span>
+				<div class="flex-1 h-px bg-hover/40"></div>
+				<span class="font-date text-[10px] text-hint">
+					{t(I18nKey.essaysPageOf)
+						.replace("{current}", String(page.currentPage))
+						.replace("{total}", String(lastPage))}
+				</span>
+			</div>
+		</div>
+
+		<EssayFeed items={items} lang={locale} />
+
+		<div class="mt-8 flex w-full justify-center">
+			<Pagination
+				currentPage={page.currentPage}
+				totalPages={lastPage}
+				prevHref={prevHref}
+				nextHref={page.url.next ? localizePath(page.url.next, locale) : undefined}
+				basePath={localizePath("/essays/page/", locale)}
+				firstHref={localizePath("/essays/", locale)}
+				lang={locale}
+			/>
+		</div>
+
+</Layout>
+
+<script>
+	import "../../../scripts/share-btn.ts";
+</script>

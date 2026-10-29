@@ -1,83 +1,73 @@
 ---
-title: "Welcome to Lonetrail"
+title: "欢迎来到 Lonetrail"
 published: 2026-01-15
-description: "Lonetrail is an Astro-based blog theme — clean, elegant, and packed with features. This article walks you through its core capabilities."
-tags: ["Lonetrail", "Getting Started", "Astro"]
-category: "Tech"
-image: ""
+description: "Lonetrail 是一个基于 Astro 的博客主题：干净、克制，功能齐全。这篇文章带你过一遍它都能做什么。"
+tags: ["Lonetrail", "入门", "Astro"]
+category: "技术"
 ---
 
-## About Lonetrail
+## 关于 Lonetrail
 
-**Lonetrail** is a modern blog theme built with Astro. It prioritizes reading experience while retaining rich customization capabilities.
+**Lonetrail** 是一个用 Astro 构建的现代博客主题。它把阅读体验放在第一位，同时保留了足够的可定制空间。
 
-> Ad Astra Per Aspera.  
-> *Through hardships to the stars.*
+> Per Aspera, Ad Astra.
+> *循此苦旅，直抵群星。*
 
-### Key Features
+### 核心能力
 
-- **Blazing fast** — Astro's static generation delivers near-instant page loads
-- **Responsive design** — Looks great on desktop, tablet, and mobile
-- **Dark mode** — Toggle between light and dark themes
-- **RSS / Atom** — Auto-generated syndication feeds
-- **Series** — Organize articles into research series
-- **Tags & categories** — Flexible content organization system
-- **Comments** — Artalk integration for discussion
-- **Links page** — Built-in friend links management
+- **静态生成**——Astro 输出纯静态页面，首屏几乎没有等待
+- **中英双语**——中文在 `/`，英文在 `/en/`，语言来回切换不丢路径
+- **日志（Essays）**——短句、图片、随手记，和长文分开呈现
+- **无刷新导航**——Swup 接管跳转，页面切换带过渡
+- **全文搜索**——构建时生成 Pagefind 索引，无需后端
+- **系列（Series）**——把文章按主题串成专题
+- **标签与分类**——随内容自动生成归档页
+- **深色模式**——跟随系统或手动切换
+- **RSS / Atom / Sitemap**——构建时自动输出，含按语言分片的版本
+- **代码高亮**——Expressive Code，带行号、折叠、复制
+- **数学与图表**——KaTeX 公式、Mermaid 图
 
-### Quick Start
+### 快速开始
 
 ```bash
-# Clone the repository
 git clone https://github.com/ChongxiSama/Lonetrail.git my-blog
 cd my-blog
-
-# Install dependencies
 pnpm install
-
-# Start dev server
 pnpm dev
-
-# Build for production
 pnpm build
 ```
 
-### Directory Structure
+### 目录结构
 
 ```
 src/
-├── content/        # Article content
-│   ├── posts/     # Blog posts
-│   ├── seri/      # Series
-│   └── spec/      # Special pages
-├── components/    # Components
-├── layouts/       # Layouts
-├── pages/         # Page routes
-├── styles/        # Styles
-└── site.yml       # Site configuration
+├── content/        # 内容
+│   ├── posts/      # 文章
+│   ├── essays/     # 日志
+│   ├── seri/       # 专题
+│   └── spec/       # 独立页面
+├── components/     # 组件
+├── layouts/        # 布局
+├── pages/          # 路由
+├── styles/         # 样式
+├── config.ts       # 功能开关与集成配置
+└── site.yml        # 站点元信息
 ```
 
-### Configuring Your Site
+### 写文章
 
-Edit `src/site.yml` to customize your site title, subtitle, author info, and more.
-
-```yaml
-site:
-  title: "My Blog"
-  subtitle: "A place for thoughts"
-  url: "https://example.com"
-```
-
-Articles are written in Markdown and placed in `src/content/posts/`. Each article requires a frontmatter header:
+在 `src/content/posts/` 下新建 Markdown 文件，补一段 frontmatter：
 
 ```yaml
 ---
-title: "Article Title"
+title: "文章标题"
 published: 2026-01-15
-description: "Article description"
-tags: ["tag1", "tag2"]
-category: "Category"
+description: "一句话摘要"
+tags: ["标签一", "标签二"]
+category: "技术"
 ---
 ```
 
-Lonetrail also supports series collections, custom pages, and more advanced features. Check out the other articles for details.
+英文版本用同名文件加 `.en` 后缀，例如 `welcome.en.md`，它会出现在 `/en/posts/welcome/`。
+
+详细配置见《Lonetrail 配置说明》。

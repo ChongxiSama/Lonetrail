@@ -1,20 +1,35 @@
 ---
-import type { CollectionEntry } from "astro:content";
+import { DEFAULT_LOCALE, type Locale } from "../../i18n/locales";
+import { formatDate } from "../../utils/date-utils";
 import BlogCard from "./BlogCard.astro";
 
 interface Props {
-	entry: any;
 	title: string;
-	category: "Tech" | "Log" | "Meta";
+	category: string;
 	published: Date;
 	url: string;
 	description: string;
 	index: number;
+	alt?: boolean;
+	tags?: string[];
+	minutes?: number;
+	lang?: Locale;
 }
 
-const { title, category, published, url, description, index } = Astro.props;
+const {
+	title,
+	category,
+	published,
+	url,
+	description,
+	index,
+	alt = false,
+	tags = [],
+	minutes,
+	lang = DEFAULT_LOCALE,
+} = Astro.props;
 
-const date = published.toISOString().split("T")[0];
+const date = formatDate(published).replace(/\//g, ".");
 ---
 
 <BlogCard
@@ -24,4 +39,8 @@ const date = published.toISOString().split("T")[0];
     date={date}
     index={index}
     href={url}
+    alt={alt}
+    tags={tags}
+    minutes={minutes}
+    lang={lang}
 />

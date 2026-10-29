@@ -1,9 +1,13 @@
 ---
-import ArchivePanel from "@components/pages/ArchivePanel";
+import ArchivePanel from "@components/pages/ArchivePanel.astro";
 import I18nKey from "@i18n/i18nKey";
+import { resolveLocale } from "@i18n/locales";
+import { getSiteTitle } from "@i18n/site";
+import { getTagLabel } from "@i18n/taxonomy";
 import { i18n } from "@i18n/translation";
-import MainGridLayout from "@layouts/MainGridLayout.astro";
+import Layout from "@layouts/Layout.astro";
 import { getSortedPostsList, getTagList } from "@utils/content-utils";
+import { formatDate } from "@utils/date-utils";
 export async function getStaticPaths() {
 	const tags = await getTagList();
 	return tags.map((tag) => {
@@ -14,11 +18,45 @@ export async function getStaticPaths() {
 	});
 }
 const { name } = Astro.props;
-const allPosts = await getSortedPostsList();
+const locale = resolveLocale(Astro.currentLocale, Astro.url.pathname);
+const t = (key: I18nKey) => i18n(key, locale);
+const allPosts = await getSortedPostsList(locale);
 const filteredPosts = allPosts.filter((post) => post.data.tags?.includes(name));
-const title = `${i18n(I18nKey.archive)} - #${name}`;
+const tagLabel = getTagLabel(name, locale);
+const title = `${t(I18nKey.archive)} - #${tagLabel}`;
+const description =
+	locale === "en"
+		? `All ${filteredPosts.length} posts tagged #${tagLabel} on ${getSiteTitle(locale)}.`
+		: `带有 #${tagLabel} 标签的全部文章，共 ${filteredPosts.length} 篇，来自 ${getSiteTitle(locale)}。`;
+
+const span = (() => {
+	if (filteredPosts.length === 0) return "";
+	const times = filteredPosts.map((post) => post.data.published.getTime());
+	const first = formatDate(new Date(Math.min(...times)))
+		.slice(0, 7)
+		.replace("/", ".");
+	const last = formatDate(new Date(Math.max(...times)))
+		.slice(0, 7)
+		.replace("/", ".");
+	return `${first} — ${last}`;
+})();
 ---
-<MainGridLayout title={title}>
-    <h1 class="sr-only">{title}</h1>
-    <ArchivePanel client:load sortedPosts={filteredPosts}></ArchivePanel>
-</MainGridLayout>
+<Layout title={title} description={description} noindex={filteredPosts.length < 3}>
+    <div class="w-full max-w-[840px] px-6 md:px-10 pt-6 pb-3">
+        <div class="flex items-center gap-3 mb-3">
+            <div class="w-[3px] h-[10px] bg-accent"></div>
+            <span class="font-deco text-[10px] text-hint uppercase tracking-[0.25em]">{t(I18nKey.tags)}</span>
+            <div class="flex-1 h-px bg-hover/40"></div>
+            <span class="font-date text-[10px] text-hint">{filteredPosts.length} {t(I18nKey.postsCount)}</span>
+        </div>
+        <h1 class="font-heading text-[28px] md:text-[36px] leading-tight text-primary uppercase tracking-tight font-black">
+            #{tagLabel}
+        </h1>
+        <p class="font-cn text-[12px] text-primary/50 mt-1">
+            {locale === "en"
+                ? `All posts with this tag${span ? `, spanning ${span}` : ""}.`
+                : `带有这个标签的全部文章${span ? `，跨度 ${span}` : ""}`}
+        </p>
+    </div>
+    <ArchivePanel sortedPosts={filteredPosts} lang={locale}></ArchivePanel>
+</Layout>

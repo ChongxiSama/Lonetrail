@@ -1,0 +1,126 @@
+---
+import I18nKey from "../../i18n/i18nKey";
+import { DEFAULT_LOCALE, type Locale, localizePath } from "../../i18n/locales";
+import { getCategoryLabel } from "../../i18n/taxonomy";
+import { i18n } from "../../i18n/translation";
+import { formatDate } from "../../utils/date-utils";
+import { getPostUrlBySlug } from "../../utils/url-utils";
+
+interface Post {
+	slug: string;
+	data: {
+		title: string;
+		tags: string[];
+		category?: string | null;
+		published: Date;
+	};
+}
+
+export interface YearGroup {
+	year: number;
+	posts: Post[];
+}
+
+interface Props {
+	groupedPosts: YearGroup[];
+	yearLabels?: string[];
+	footerDivision?: string;
+	footerLabel?: string;
+	emptyMessage?: string;
+	showDataAttributes?: boolean;
+	lang?: Locale;
+}
+
+const {
+	groupedPosts,
+	yearLabels = ["Cycle_Alpha", "Cycle_Beta", "Cycle_Gamma"],
+	footerDivision = "LONETRAIL DIVISION",
+	footerLabel = "Index_Complete",
+	emptyMessage = "No further entries in this sector.",
+	showDataAttributes = false,
+	lang = DEFAULT_LOCALE,
+} = Astro.props;
+
+const formatMonthDay = (date: Date) => {
+	const [, month, day] = formatDate(date).split("/");
+	return `${month}.${day}`;
+};
+
+const currentMonth = (new Date().getMonth() + 1).toString().padStart(2, "0");
+---
+
+<div class="relative z-10 flex flex-col">
+	{groupedPosts.map((group, idx) => (
+		<div class:list={["archive-year-group", "mb-12 last:mb-0"]}>
+			<div class="flex items-baseline gap-3 mb-6">
+				<span class:list={[
+					"font-display text-4xl md:text-5xl text-primary",
+					idx > 0 ? "opacity-40" : "",
+				]}>
+					{group.year}
+				</span>
+				<span class="font-date text-[11px] text-hint">
+					{group.posts.length} {i18n(I18nKey.postsCount, lang)}
+				</span>
+				<div class="flex-1 h-[1px] bg-hover" />
+				<span class="font-deco text-[10px] text-secondary uppercase tracking-widest">
+					{yearLabels[idx] ?? `Cycle_${idx}`}
+				</span>
+			</div>
+			<div class="relative ml-2 border-l-2 border-accent/25">
+				{group.posts.map((post) => (
+					<a
+						href={localizePath(getPostUrlBySlug(post.slug), lang)}
+						class:list={[
+							"group highlight-sweep relative flex items-center gap-3 py-3 pl-5 border-b border-border/20 hover:bg-card/40 transition-colors",
+							showDataAttributes ? "archive-post-link" : "",
+						]}
+						{...(showDataAttributes ? {
+							"data-category": post.data.category || "",
+							"data-tags": (post.data.tags || []).join(","),
+						} : {})}
+					>
+						<span class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-accent/50 ring-2 ring-page group-hover:bg-accent transition-colors" />
+						<span class="font-date text-[12px] text-secondary whitespace-nowrap shrink-0">
+							{formatMonthDay(post.data.published)}
+						</span>
+						<h3 class="flex-1 min-w-0 font-heading text-[15px] text-primary font-bold truncate group-hover:text-accent transition-colors">
+							{post.data.title}
+						</h3>
+						{post.data.category && (
+							<span class="font-deco text-[9px] text-secondary uppercase tracking-widest shrink-0">
+								{getCategoryLabel(post.data.category, lang)}
+							</span>
+						)}
+						<span class="text-secondary font-deco text-sm group-hover:text-accent transition-colors shrink-0">
+							→
+						</span>
+					</a>
+				))}
+			</div>
+		</div>
+	))}
+
+	{groupedPosts.length === 0 && (
+		<div class:list={["py-12 text-center", showDataAttributes ? "archive-empty-state" : ""]}>
+			<p class="font-deco text-[11px] text-secondary italic">{emptyMessage}</p>
+		</div>
+	)}
+</div>
+
+<div class="relative z-10 mt-20 pt-8 border-t border-primary flex flex-col md:flex-row justify-between items-center md:items-end gap-6">
+	<div class="flex items-center gap-4">
+		<div class="font-deco text-[10px] text-secondary leading-none uppercase tracking-tighter text-center md:text-left">
+			{footerDivision}
+			<br />
+			{footerLabel}{currentMonth}
+		</div>
+	</div>
+	<span class="text-[10px] font-deco text-secondary uppercase tracking-widest italic" />
+</div>
+
+<div class="absolute bottom-0 left-0 right-0 h-[3px] flex z-10">
+	<div class="bg-rl-teal w-1/3" />
+	<div class="bg-rl-gold w-1/3" />
+	<div class="bg-rl-red w-1/3" />
+</div>

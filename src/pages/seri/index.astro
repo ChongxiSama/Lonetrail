@@ -2,91 +2,145 @@
 import { getCollection } from "astro:content";
 import ArchiveHeader from "@components/pages/ArchiveHeader.astro";
 import I18nKey from "../../i18n/i18nKey";
+import { localizePath, resolveLocale } from "../../i18n/locales";
+import { getSiteTitle } from "../../i18n/site";
 import { i18n } from "../../i18n/translation";
-import { siteConfig } from "../../config";
 import Layout from "../../layouts/Layout.astro";
-import "../../styles/cepato.css";
-import { RpStamp } from "@components/ui/RpStamp";
-import { StripeFooter } from "@components/ui/StripeFooter";
+import { getSortedPosts } from "../../utils/content-utils";
+import { formatDate } from "../../utils/date-utils";
+import { stripMarkdown, truncate } from "../../utils/strip-markdown";
 
-const allSeries = (await getCollection("seri")).sort(
-	(a, b) => b.data.published.getTime() - a.data.published.getTime(),
-);
+const locale = resolveLocale(Astro.currentLocale, Astro.url.pathname);
+const t = (key: I18nKey) => i18n(key, locale);
+const seriesLabel = t(I18nKey.series);
 
-const seriesLabel = i18n(I18nKey.series);
-const pageTitle = `${seriesLabel} - ${siteConfig.title}`;
-const metaDescription = `${siteConfig.title} series collection`;
+const allSeries = (await getCollection("seri"))
+	.filter((s) =>
+		locale === "en"
+			? s.filePath?.endsWith(".en.md")
+			: !s.filePath?.endsWith(".en.md"),
+	)
+	.map((s) => ({
+		...s,
+		slug: (s.filePath?.split("/").pop() ?? s.id)
+			.replace(/\.en\.md$/, "")
+			.replace(/\.md$/, ""),
+	}))
+	.sort((a, b) => b.data.published.getTime() - a.data.published.getTime());
+
+const allPosts = await getSortedPosts(locale);
+
+const seriesWithStats = allSeries.map((seri) => {
+	const filter = seri.data.filter;
+	const posts = allPosts.filter((post) => {
+		if (!filter) return false;
+		if (filter.tag && post.data.tags?.includes(filter.tag)) return true;
+		if (filter.category && post.data.category === filter.category) return true;
+		return false;
+	});
+
+	const span = (() => {
+		if (posts.length === 0) return "";
+		const times = posts.map((post) => post.data.published.getTime());
+		const first = formatDate(new Date(Math.min(...times)))
+			.slice(0, 7)
+			.replace("/", ".");
+		const last = formatDate(new Date(Math.max(...times)))
+			.slice(0, 7)
+			.replace("/", ".");
+		return `${first} — ${last}`;
+	})();
+
+	return {
+		...seri,
+		count: posts.length,
+		span,
+		summary:
+			seri.data.description?.trim() ||
+			truncate(stripMarkdown(seri.body ?? ""), 110),
+	};
+});
+
+const pageTitle = `${seriesLabel} - ${getSiteTitle(locale)}`;
+const metaDescription =
+	locale === "en"
+		? `Long-form series by ${getSiteTitle(locale)} — several parts, one thread.`
+		: `${getSiteTitle(locale)} 的专题系列，把长文按主题串起来阅读。`;
 ---
 
 <Layout title={pageTitle} description={metaDescription}>
-	<div class="py-12 md:py-16 flex flex-col items-center gap-0 overflow-x-hidden pt-14">
 
 		<ArchiveHeader
-			title={i18n(I18nKey.series)}
+			title={seriesLabel}
 			count={allSeries.length}
 			variant="dark"
+			compact
+			lang={locale}
 		/>
 
-		<div class="relative w-full max-w-[840px] bg-lt-bg paper-texture shadow-2xl px-6 md:px-16 py-12 overflow-hidden flex flex-col gap-12 transition-all duration-500 min-h-[400px]">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-                {allSeries.map(seri => (
-                    <a href={`/seri/${seri.id}/`} class="group relative p-6 border border-lt-border/40 hover:bg-lt-surface transition-all duration-300 flex flex-col gap-4 overflow-hidden">
-                        <div class="flex justify-between items-start">
-                            <div class="space-y-1">
-                                <span class="font-mono text-[10px] text-lt-ghost uppercase tracking-widest block">
-                                    SERIES_{seri.id.toUpperCase()}
-                                </span>
-                                <h3 class="font-cn text-xl font-bold text-lt-ink group-hover:text-lt-accent transition-colors">
-                                    {seri.data.title}
-                                </h3>
-                            </div>
-                            <span class="text-lt-ghost group-hover:text-lt-ink transition-colors font-display text-2xl">→</span>
-                        </div>
-                        <p class="font-cn text-[13px] text-lt-ink/60 line-clamp-2 leading-relaxed">
-                            {seri.data.description}
-                        </p>
-                        <div class="pt-4 mt-auto flex items-center justify-between border-t border-lt-border/20">
-                            <span class="font-mono text-[10px] text-lt-ghost italic">
-                                {seri.data.subtitle || "RESEARCH_SERIES"}
-                            </span>
-                            <span class="font-mono text-[10px] text-lt-ghost">
-                                {seri.data.published.getFullYear()}.{(seri.data.published.getMonth()+1).toString().padStart(2, '0')}
-                            </span>
-                        </div>
-                        
-                        <div class="absolute -bottom-4 -right-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
-                             <span class="font-display text-6xl uppercase italic select-none pointer-events-none">
-                                {seri.id}
-                             </span>
-                        </div>
-                    </a>
-                ))}
-            </div>
-
-            {allSeries.length === 0 && (
-                <div class="py-20 text-center relative z-10">
-                    <p class="font-mono text-[11px] text-lt-ghost italic">
-                        No series initialized in this sector.
-                    </p>
-                </div>
-            )}
-
-            <div class="relative z-10 mt-12 pt-8 border-t border-lt-ink flex flex-col md:flex-row justify-between items-center md:items-end gap-6">
-				<div class="flex items-center gap-4">
-					<div class="scale-90 origin-left">
-						<RpStamp />
-					</div>
-					<div class="text-[10px] font-mono text-lt-ghost leading-none uppercase tracking-tighter text-center md:text-left">
-						Rhine Lab Series Central
-						<br />
-						Directory_Active // {new Date().getFullYear()}
-					</div>
-				</div>
-				<span class="text-[10px] font-mono text-lt-ghost uppercase tracking-widest italic">
-					// End_of_Directory
+		<div class="relative w-full max-w-[840px] px-6 md:px-10 pt-4 pb-4">
+			<div class="flex items-center gap-3">
+				<div class="w-[3px] h-[10px] bg-accent"></div>
+				<span class="font-deco text-[10px] text-hint uppercase tracking-[0.25em]">
+					{t(I18nKey.seriesDirectory)}
 				</span>
+				<div class="flex-1 h-px bg-hover/40"></div>
+				<span class="font-date text-[10px] text-hint">{allSeries.length} {seriesLabel}</span>
 			</div>
-            <StripeFooter />
-        </div>
-	</div>
+		</div>
+
+		<div class="relative flex w-full max-w-[840px] flex-col gap-5 px-6 pb-10 md:px-10">
+			{seriesWithStats.map((seri, index) => (
+				<a
+					href={localizePath(`/seri/${seri.slug}/`, locale)}
+					class="group relative block overflow-hidden border border-border/30 bg-page paper-texture shadow-2xl p-6 md:p-8 hover:bg-card/40 transition-colors"
+				>
+					<div class="flex items-start justify-between gap-4 mb-4">
+						<span class="font-deco text-[9px] text-hint uppercase tracking-[0.3em]">
+							Series_{String(index + 1).padStart(2, "0")} // {seri.slug.toUpperCase()}
+						</span>
+						{seri.span && (
+							<span class="font-date text-[10px] text-hint shrink-0">{seri.span}</span>
+						)}
+					</div>
+
+					<h2 class="font-heading text-[24px] leading-tight tracking-tight text-primary uppercase font-black group-hover:text-accent transition-colors md:text-[32px]">
+						{seri.data.title}
+					</h2>
+
+					{seri.data.subtitle && (
+						<p class="font-deco text-[10px] text-accent uppercase tracking-[0.25em] mt-1.5">
+							{seri.data.subtitle}
+						</p>
+					)}
+
+					{seri.summary && (
+						<p class="font-cn text-[13px] text-primary/60 leading-relaxed mt-3 line-clamp-2">
+							{seri.summary}
+						</p>
+					)}
+
+					<div class="mt-5 flex items-center justify-between border-t border-border/20 pt-3">
+						<span class="font-date text-[10px] text-hint">
+							{seri.count} {t(I18nKey.postsCount)}
+						</span>
+						<span class="font-deco text-[9px] text-secondary uppercase tracking-[0.2em] group-hover:text-accent transition-colors">
+							{t(I18nKey.viewAll)} →
+						</span>
+					</div>
+
+					<span class="absolute -bottom-6 -right-2 font-deco text-[72px] uppercase italic leading-none text-primary opacity-[0.03] select-none pointer-events-none md:text-[96px]">
+						{seri.slug}
+					</span>
+				</a>
+			))}
+
+			{allSeries.length === 0 && (
+				<div class="py-20 text-center">
+					<p class="font-deco text-[11px] text-secondary italic">
+						{t(I18nKey.noSeries)}
+					</p>
+				</div>
+			)}
+		</div>
 </Layout>

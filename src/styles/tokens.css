@@ -1,16 +1,37 @@
 :root {
-  /* Rhine Lab Color Palette Base */
-  --ce-ink: 26 24 20;
-  --ce-bg: 237 230 214;
-  --ce-surface: 228 220 200;
-  --ce-border: 200 191 168;
-  --ce-accent: 212 98 26;
-  --ce-ghost: 168 159 144;
+  /* ====================
+     Background hierarchy (由深到浅)
+     ==================== */
+  --ce-bg-hero: 26 24 20;       /* 最深层 #1A1814 */
+  --ce-bg-page: 237 230 214;    /* 页面底层背景 #EDE6D6 */
+  --ce-bg-card: 228 220 200;    /* 卡片/内容块 #E4DCC8 */
+  --ce-bg-hover: 200 191 168;   /* 悬浮/分割线 #C8BFA8 */
   
-  /* Semantic Variables mapped to Rhine design */
+  /* ====================
+     Text hierarchy (由主到次)
+     ==================== */
+  --ce-text-primary: 26 24 20;      /* 主文字 #1A1814 */
+  --ce-text-secondary: 92 86 74;    /* 次要文字 #5C564A */
+  --ce-text-hint: 101 94 82;        /* hint/辅助 #655E52 */
+  --ce-text-hero: 237 230 214;      /* 深色区域上的文字 #EDE6D6 */
+
+  /* ====================
+     Accent
+     ==================== */
+  --ce-accent: 159 71 14;       /* 主 accent（浅色底文字用）#9F470E */
+  --ce-red: 163 51 50;          /* 副 accent #A33332 */
+  
+  /* ====================
+     Border
+     ==================== */
+  --ce-border: 200 191 168;     /* #C8BFA8 */
+  
+  /* ====================
+     Semantic Variables (derived)
+     ==================== */
   --primary: rgb(var(--ce-accent));
-  --page-bg: rgb(var(--ce-bg));
-  --card-bg: rgb(var(--ce-surface));
+  --page-bg: rgb(var(--ce-bg-page));
+  --card-bg: rgb(var(--ce-bg-card));
 
   --btn-content: rgb(var(--ce-accent));
   --btn-regular-bg: rgb(var(--ce-border));
@@ -19,7 +40,7 @@
   --btn-plain-bg-hover: rgba(var(--ce-border) / 0.2);
   --btn-plain-bg-active: rgba(var(--ce-border) / 0.4);
 
-  --deep-text: rgb(var(--ce-ink));
+  --deep-text: rgb(var(--ce-text-primary));
   --title-active: rgb(var(--ce-accent));
 
   --line-divider: rgba(var(--ce-border) / 0.5);
@@ -37,54 +58,45 @@
   --admonitions-color-warning: #C29145;
   --admonitions-color-caution: #D4621A;
 
-  --float-panel-bg: rgb(var(--ce-surface));
+  --float-panel-bg: rgb(var(--ce-bg-card));
 
   --hue: 188;
-  --radius-large: 0px; /* Rhine style prefers sharp or very small radius */
+  --radius-large: 0px;
   --radius-medium: 0px;
   --radius-small: 0px;
-  --font-sans: var(--font-sans-pj), var(--font-serif), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Futura PT", "Glow Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --font-cn: "Futura PT", "Glow Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --font-novecento: "Novecento Sans Wide", system-ui, sans-serif;
+  --font-heading: var(--font-sans);
   --font-mono: var(--font-mono-var), monospace;
 }
 
-/* 强制覆盖深色模式，防止正文变白 */
 .dark {
-  --ce-ink: 26 24 20 !important;
-  --ce-bg: 237 230 214 !important;
-  --ce-surface: 228 220 200 !important;
-  --ce-border: 200 191 168 !important;
-  --ce-accent: 212 98 26 !important;
-  --ce-ghost: 168 159 144 !important;
+  --ce-bg-hero: 26 24 20;           /* 不变 #1A1814 */
+  --ce-bg-page: 31 28 23;           /* #1F1C17 */
+  --ce-bg-card: 37 33 25;           /* #252119 */
+  --ce-bg-hover: 46 41 34;          /* #2E2922 */
   
-  --deep-text: rgb(26 24 20) !important;
-}
-:root {
-  --font-sans: var(--font-sans-pj), system-ui, -apple-system, "PingFang SC", "HarmonyOS Sans SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  --font-novecento: "Novecento Sans Wide", system-ui, sans-serif;
+  --ce-text-primary: 232 226 214;   /* #E8E2D6 */
+  --ce-text-secondary: 168 159 147; /* #A89F93 */
+  --ce-text-hint: 146 138 121;      /* #928A79 */
+  --ce-text-hero: 232 226 214;      /* 深色区域文字 = primary = #E8E2D6 */
 
-@font-face {
-  font-family: "Novecento Sans Wide";
-  src: url("/fonts/Novecentosanswide-Light.otf") format("opentype");
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
+  --ce-accent: 212 98 26;           /* 不变 */
+  --ce-red: 163 51 50;              /* 不变 */
+
+  --ce-border: 46 41 34;            /* #2E2922 */
 }
-@font-face {
-  font-family: "Novecento Sans Wide";
-  src: url("/fonts/Novecentosanswide-Normal.otf") format("opentype");
-  font-weight: 400 500;
-  font-style: normal;
-  font-display: swap;
+
+/* 深色面板内部沿用深色底的值，避免浅色主题下 secondary/hint 变暗后不可读 */
+.bg-hero {
+  --ce-text-secondary: 168 159 144;
+  --ce-text-hint: 146 138 121;
+  --ce-accent: 212 98 26;
 }
-@font-face {
-  font-family: "Novecento Sans Wide";
-  src: url("/fonts/Novecentosanswide-DemiBold.otf") format("opentype");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-  --font-mono: "Fira Code", "Fira Code Variable", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-}
+/* removed duplicate :root; font variables merged above */
+
+/* Novecento + Alimama font-face moved to /styles/fonts.css (non-blocking) */
 
 @tailwind base;
 @tailwind components;
@@ -94,6 +106,7 @@
     html {
         text-rendering: optimizeLegibility;
         -webkit-font-smoothing: antialiased;
+        -webkit-tap-highlight-color: transparent;
     }
 
     body {
@@ -103,8 +116,11 @@
         margin: 0;
         padding: 0;
     }
+
+    :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+        outline: 2px solid rgb(var(--ce-accent));
+        outline-offset: 2px;
+    }
 }
 
-.paper-texture {
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-}
+

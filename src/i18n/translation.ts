@@ -1,22 +1,32 @@
-import { siteConfig } from "../config";
 import type I18nKey from "./i18nKey";
 import { en } from "./languages/en";
 import { zh_CN } from "./languages/zh_CN";
+import { DEFAULT_LOCALE, type Locale, toLocale } from "./locales";
+
 export type Translation = {
 	[K in I18nKey]: string;
 };
-const defaultTranslation = en;
-const map: { [key: string]: Translation } = {
-	en: en,
-	en_us: en,
-	en_gb: en,
-	en_au: en,
-	zh_cn: zh_CN,
+
+const map: Record<Locale, Translation> = {
+	zh: zh_CN,
+	en,
 };
-export function getTranslation(lang: string): Translation {
-	return map[lang.toLowerCase()] || defaultTranslation;
+
+/**
+ * Resolve a translation for an explicit locale.
+ *
+ * All call sites run at build time (SSG), so the locale must be passed down
+ * from the page. There is deliberately no mutable runtime language state.
+ */
+export function getTranslation(
+	locale: Locale | string = DEFAULT_LOCALE,
+): Translation {
+	return map[toLocale(locale)];
 }
-export function i18n(key: I18nKey): string {
-	const lang = siteConfig.lang || "en";
-	return getTranslation(lang)[key];
+
+export function i18n(
+	key: I18nKey,
+	locale: Locale | string = DEFAULT_LOCALE,
+): string {
+	return getTranslation(locale)[key] ?? String(key);
 }

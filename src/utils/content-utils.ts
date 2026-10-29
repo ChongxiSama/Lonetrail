@@ -1,71 +1,94 @@
 import { type CollectionEntry, getCollection } from "astro:content";
 import I18nKey from "@i18n/i18nKey";
+import { DEFAULT_LOCALE, type Locale } from "@i18n/locales";
 import { i18n } from "@i18n/translation";
 import { getCategoryUrl } from "@utils/url-utils.ts";
 
-async function getRawSortedPosts(filterArchived = false) {
-	const allBlogPosts = await getCollection("posts", ({ data }) => {
-		const isDraft = import.meta.env.PROD ? data.draft === true : false;
-		const isArchived = data.archive === true;
-		const isProtected = !!data.password;
-		if (filterArchived) {
-			return !isDraft && !isProtected && !isArchived;
-		}
-		return !isDraft && !isProtected;
-	});
-	const postsWithCase = allBlogPosts.map((entry: CollectionEntry<"posts">) => {
-		const parts = entry.id.split("/");
-		const filename = parts[parts.length - 1];
-		return {
-			...entry,
-			slug: filename,
-		};
-	});
-	const sorted = postsWithCase.sort((a: any, b: any) => {
-		const dateA = new Date(a.data.published);
-		const dateB = new Date(b.data.published);
-		return dateA > dateB ? -1 : 1;
-	});
-	return sorted;
+export type SluggedPost = Omit<CollectionEntry<"posts">, "data"> & {
+	slug: string;
+	data: CollectionEntry<"posts">["data"];
+};
+
+/**
+ * English translations live next to the Chinese original as `<slug>.en.md`.
+ * The suffix is stripped from the public slug, so `dji.md` and `dji.en.md`
+ * share the same slug and are served at `/posts/dji/` and `/en/posts/dji/`.
+ */
+const EN_SUFFIX = ".en";
+
+const cachedRawPosts = new Map<Locale, Promise<SluggedPost[]>>();
+
+async function getRawSortedPosts(
+	locale: Locale = DEFAULT_LOCALE,
+): Promise<SluggedPost[]> {
+	if (import.meta.env.PROD) {
+		const cached = cachedRawPosts.get(locale);
+		if (cached) return cached;
+	}
+	const build = async (): Promise<SluggedPost[]> => {
+		const allBlogPosts = await getCollection("posts", ({ data }) => {
+			const isDraft = import.meta.env.PROD ? data.draft === true : false;
+			const isNoindex = data.noindex === true;
+			return !isDraft && !isNoindex;
+		});
+		const postsWithCase = allBlogPosts
+			.filter((entry) =>
+				locale === "en"
+					? entry.id.endsWith(EN_SUFFIX)
+					: !entry.id.endsWith(EN_SUFFIX),
+			)
+			.map((entry: CollectionEntry<"posts">) => {
+				const parts = entry.id.split("/");
+				const filename = parts[parts.length - 1];
+				const slug =
+					locale === "en" ? filename.slice(0, -EN_SUFFIX.length) : filename;
+				return {
+					...entry,
+					slug,
+				};
+			});
+		return postsWithCase.sort(
+			(a, b) => b.data.published.getTime() - a.data.published.getTime(),
+		);
+	};
+	const promise = build();
+	if (import.meta.env.PROD) cachedRawPosts.set(locale, promise);
+	return promise;
 }
+
 export async function getSortedPosts(
-	filterArchived = false,
-): Promise<CollectionEntry<"posts">[]> {
-	const sorted = await getRawSortedPosts(filterArchived);
-	for (let i = 1; i < sorted.length; i++) {
-		sorted[i].data.nextSlug = sorted[i - 1].slug;
-		sorted[i].data.nextTitle = sorted[i - 1].data.title;
-	}
-	for (let i = 0; i < sorted.length - 1; i++) {
-		sorted[i].data.prevSlug = sorted[i + 1].slug;
-		sorted[i].data.prevTitle = sorted[i + 1].data.title;
-	}
-	return sorted;
+	locale: Locale = DEFAULT_LOCALE,
+): Promise<SluggedPost[]> {
+	return getRawSortedPosts(locale);
 }
+
 export type PostForList = {
 	slug: string;
 	data: CollectionEntry<"posts">["data"];
 };
-export async function getSortedPostsList(): Promise<PostForList[]> {
-	const sortedFullPosts = await getRawSortedPosts(false);
-	const sortedPostsList = sortedFullPosts.map(
-		(post: CollectionEntry<"posts">) => ({
-			slug: post.slug,
-			data: post.data,
-		}),
-	);
+
+export async function getSortedPostsList(
+	locale: Locale = DEFAULT_LOCALE,
+): Promise<PostForList[]> {
+	const sortedFullPosts = await getRawSortedPosts(locale);
+	const sortedPostsList = sortedFullPosts.map((post) => ({
+		slug: post.slug,
+		data: post.data,
+	}));
 	return sortedPostsList;
 }
+
 export type Tag = {
 	name: string;
 	count: number;
 };
-export async function getTagList(): Promise<Tag[]> {
-	const allBlogPosts = await getCollection("posts", ({ data }) => {
-		return import.meta.env.PROD ? data.draft !== true && !data.password : true;
-	});
+
+export async function getTagList(
+	locale: Locale = DEFAULT_LOCALE,
+): Promise<Tag[]> {
+	const allBlogPosts = await getRawSortedPosts(locale);
 	const countMap: { [key: string]: number } = {};
-	allBlogPosts.forEach((post: CollectionEntry<"posts">) => {
+	allBlogPosts.forEach((post) => {
 		post.data.tags.forEach((tag: string) => {
 			if (!countMap[tag]) countMap[tag] = 0;
 			countMap[tag]++;
@@ -78,20 +101,24 @@ export async function getTagList(): Promise<Tag[]> {
 	});
 	return keys.map((key) => ({ name: key, count: countMap[key] }));
 }
+
 export type Category = {
 	name: string;
 	count: number;
 	url: string;
 };
-export async function getCategoryList(): Promise<Category[]> {
-	const allBlogPosts = await getCollection("posts", ({ data }) => {
-		return import.meta.env.PROD ? data.draft !== true && !data.password : true;
-	});
+
+export async function getCategoryList(
+	locale: Locale = DEFAULT_LOCALE,
+): Promise<Category[]> {
+	const allBlogPosts = await getRawSortedPosts(locale);
 	const count: { [key: string]: number } = {};
-	allBlogPosts.forEach((post: CollectionEntry<"posts">) => {
+	const uncategorizedKey = i18n(I18nKey.uncategorized, locale);
+	allBlogPosts.forEach((post) => {
 		if (!post.data.category) {
-			const ucKey = i18n(I18nKey.uncategorized);
-			count[ucKey] = count[ucKey] ? count[ucKey] + 1 : 1;
+			count[uncategorizedKey] = count[uncategorizedKey]
+				? count[uncategorizedKey] + 1
+				: 1;
 			return;
 		}
 		const categoryName =
@@ -115,15 +142,15 @@ export async function getCategoryList(): Promise<Category[]> {
 	}
 	return ret;
 }
+
 export async function getRelatedPosts(
 	currentPost: CollectionEntry<"posts">,
+	allPosts: SluggedPost[],
 	limit = 3,
 ): Promise<PostForList[]> {
-	const allPosts = await getSortedPosts(false);
 	const tokenize = (text: string) => {
 		if (!text) return new Set<string>();
-		const matches =
-			text.toLowerCase().match(/[\u4e00-\u9fa5]|[a-zA-Z0-9]+/g) || [];
+		const matches = text.toLowerCase().match(/[一-龥]|[a-zA-Z0-9]+/g) || [];
 		const stopWords = new Set([
 			"的",
 			"了",
@@ -144,7 +171,7 @@ export async function getRelatedPosts(
 		]);
 		return new Set(
 			(matches as string[])
-				.filter((m) => m.length > 1 || /[\u4e00-\u9fa5]/.test(m))
+				.filter((m) => m.length > 1 || /[一-龥]/.test(m))
 				.filter((m) => !stopWords.has(m)),
 		);
 	};

@@ -1,0 +1,311 @@
+---
+import { profileConfig, siteConfig, siteMeta } from "../../config";
+import I18nKey from "../../i18n/i18nKey";
+import { LOCALE_META, LOCALES, type Locale } from "../../i18n/locales";
+import { i18n } from "../../i18n/translation";
+
+interface NavItem {
+	label: string;
+	href: string;
+}
+
+interface Props {
+	items: NavItem[];
+	siteTitle?: string;
+	avatarSrc?: string;
+	locale: Locale;
+	switchHref: string;
+	switchLocale: Locale;
+}
+
+const {
+	items,
+	avatarSrc = profileConfig.avatar,
+	locale,
+	switchHref,
+} = Astro.props;
+const githubUrl =
+	profileConfig.links.find((link) => link.url.includes("github.com"))?.url ??
+	siteMeta.url;
+const t = (key: I18nKey) => i18n(key, locale);
+
+const currentPath = Astro.url.pathname.replace(/\/?$/, "/");
+
+function isActive(href: string): boolean {
+	return currentPath === href.replace(/\/?$/, "/");
+}
+---
+
+<!-- 遮罩层：drawer 打开时显示 -->
+<div
+	class="drawer-overlay fixed inset-0 bg-hero/20 z-[9999] transition-opacity duration-300 min-[1140px]:hidden"
+	data-action="close-drawer"
+></div>
+
+<!-- 侧边栏：始终渲染，通过 CSS 平移控制可见性 -->
+<aside
+	class="sticky top-0 left-0 h-screen w-[300px] bg-hero text-on-hero z-[10000] paper-texture flex flex-col flex-shrink-0 transition-none"
+>
+	<div class="py-8 border-b border-white/5">
+		<div class="flex items-start gap-4 px-4">
+			<div class="relative w-12 h-12 bg-hint/20 border border-white/10 flex-shrink-0 overflow-hidden group">
+				<div class="absolute inset-0 opacity-[0.04] pointer-events-none" style="background-image: radial-gradient(#fff 1px, transparent 0); background-size: 3px 3px;"></div>
+				<div class="absolute inset-0 bg-gradient-to-b from-transparent via-accent/5 to-transparent h-8 -translate-y-full group-hover:animate-[scan_2s_linear_infinite] pointer-events-none"></div>
+				<img
+					src={avatarSrc}
+					alt={profileConfig.name}
+					class="w-full h-full object-cover block no-styling relative z-10"
+				/>
+			</div>
+			<div class="min-w-0 flex-1">
+				<div class="flex items-center gap-2 mb-1">
+					<h2 class="font-heading text-xl tracking-tight uppercase leading-none text-white">
+						{profileConfig.name}
+					</h2>
+				</div>
+			</div>
+		</div>
+		<div class="px-4 mt-3">
+			<p class="font-cn text-[12px] text-secondary leading-relaxed">
+				{t(I18nKey.tagline)}
+			</p>
+		</div>
+	</div>
+
+	<nav class="flex-1 min-h-0 overflow-y-auto no-scrollbar px-3 py-4">
+		<button
+			data-action="open-search"
+			class="mb-1 flex w-full items-center gap-3 px-3 py-2.5 text-secondary transition-colors hover:text-accent"
+		>
+			<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<circle cx="11" cy="11" r="8" />
+				<path d="m21 21-4.3-4.3" />
+			</svg>
+			<span class="font-deco text-[10px] uppercase tracking-widest">{t(I18nKey.search)}</span>
+		</button>
+		<div class="flex flex-col">
+			{items.map((item, idx) => {
+				const active = isActive(item.href);
+				return (
+					<a
+						href={item.href}
+						data-nav-link
+						data-path={item.href.replace(/\/?$/, "/")}
+						data-action="close-drawer"
+						class="group relative flex items-center gap-4 px-3 py-3 transition-colors hover:bg-white/[0.04]"
+					>
+						<span
+							data-nav-bar
+							class:list={[
+								"absolute left-0 top-1/2 h-5 w-[2px] -translate-y-1/2 bg-accent transition-opacity",
+								active ? "opacity-100" : "opacity-0",
+							]}
+						/>
+						<span
+							data-nav-index
+							class:list={[
+								"w-5 font-deco text-[10px]",
+								active ? "text-accent" : "text-white/25",
+							]}
+						>
+							{(idx + 1).toString().padStart(2, "0")}
+						</span>
+						<span
+							data-nav-label
+							class:list={[
+								"font-display text-[16px] uppercase tracking-wide transition-colors",
+								active ? "text-white" : "text-white/55 group-hover:text-white/85",
+							]}
+						>
+							{item.label}
+						</span>
+					</a>
+				);
+			})}
+		</div>
+	</nav>
+
+	<div class="border-t border-white/5">
+		<details class="group/settings">
+			<summary
+				class="flex cursor-pointer list-none items-center gap-3 px-5 py-3 text-secondary transition-colors hover:text-white [&::-webkit-details-marker]:hidden"
+			>
+				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<circle cx="12" cy="12" r="3" />
+					<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+				</svg>
+				<span class="font-deco text-[10px] uppercase tracking-widest">{t(I18nKey.settings)}</span>
+				<span
+					class="ml-auto font-deco text-[14px] leading-none text-white/25 transition-transform duration-200 group-open/settings:rotate-45"
+					>+</span
+				>
+			</summary>
+			<div class="space-y-3 px-5 pb-4">
+				<div class="flex items-center justify-between">
+					<span class="font-deco text-[9px] uppercase tracking-[0.2em] text-secondary">
+						{t(I18nKey.language)}
+					</span>
+					<div class="flex h-7 items-stretch border border-white/10" role="group" aria-label={t(I18nKey.language)}>
+						{LOCALES.map((target) => (
+							target === locale ? (
+								<span
+									class="flex items-center justify-center bg-accent/15 px-2.5 font-deco text-[10px] font-bold tracking-widest text-accent"
+									aria-current="true"
+								>
+									{LOCALE_META[target].shortLabel}
+								</span>
+							) : (
+								<a
+									href={switchHref}
+									hreflang={LOCALE_META[target].htmlLang}
+									lang={LOCALE_META[target].htmlLang}
+									class="flex items-center justify-center px-2.5 font-deco text-[10px] font-bold tracking-widest text-secondary transition-colors hover:bg-white/5 hover:text-accent"
+									title={target === "en" ? t(I18nKey.switchToEnglish) : t(I18nKey.switchToChinese)}
+									aria-label={target === "en" ? t(I18nKey.switchToEnglish) : t(I18nKey.switchToChinese)}
+									data-lang-switch={target}
+									data-no-swup
+								>
+									{LOCALE_META[target].shortLabel}
+								</a>
+							)
+						))}
+					</div>
+				</div>
+				<div class="flex items-center justify-between">
+					<span class="font-deco text-[9px] uppercase tracking-[0.2em] text-secondary">
+						{t(I18nKey.theme)}
+					</span>
+					<div class="flex h-7 items-stretch border border-white/10" role="group" aria-label={t(I18nKey.theme)}>
+						{(["auto", "light", "dark"] as const).map((mode) => (
+							<button
+								type="button"
+								data-theme-mode={mode}
+								aria-pressed="false"
+								class="px-2.5 font-deco text-[9px] font-bold uppercase tracking-widest text-secondary transition-colors hover:text-accent"
+							>
+								{mode}
+							</button>
+						))}
+					</div>
+				</div>
+				<div class="flex items-center justify-between">
+					<span class="font-deco text-[9px] uppercase tracking-[0.2em] text-secondary">
+						{t(I18nKey.siteLinks)}
+					</span>
+					<div class="flex items-center gap-1.5">
+						<a
+							href={locale === "en" ? "/en/" : "/"}
+							class="flex h-8 w-8 items-center justify-center border border-white/10 text-secondary transition-colors hover:border-accent/50 hover:text-accent"
+							title={t(I18nKey.homeLink)}
+						>
+							<svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+								<polyline points="9 22 9 12 15 12 15 22" />
+							</svg>
+						</a>
+						<a
+							href={locale === "en" ? "/en/subscribe/" : "/subscribe/"}
+							class="flex h-8 w-8 items-center justify-center border border-white/10 text-secondary transition-colors hover:border-accent/50 hover:text-accent"
+							title={t(I18nKey.followRss)}
+						>
+							<svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M4 11a9 9 0 0 1 9 9" />
+								<path d="M4 4a16 16 0 0 1 16 16" />
+								<circle cx="5" cy="19" r="1" />
+							</svg>
+						</a>
+						<a
+							href={githubUrl}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="flex h-8 w-8 items-center justify-center border border-white/10 text-secondary transition-colors hover:border-accent/50 hover:text-accent"
+							title="GitHub"
+						>
+							<svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+								<path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
+							</svg>
+						</a>
+					</div>
+				</div>
+			</div>
+		</details>
+		<div class="flex items-center justify-between border-t border-white/5 px-5 py-3">
+			<span class="font-deco text-[9px] uppercase tracking-tighter text-secondary">{siteConfig.title}</span>
+			<span class="font-deco text-[9px] uppercase tracking-widest text-white/20">{siteMeta.version}</span>
+		</div>
+		<div class="flex h-[2px] w-full">
+			<div class="w-1/3 bg-rl-teal"></div>
+			<div class="w-1/3 bg-rl-gold"></div>
+			<div class="w-1/3 bg-rl-red"></div>
+		</div>
+	</div>
+</aside>
+
+<script>
+	import { closeNav, openSearch } from "../../scripts/nav-state";
+	import { getStoredTheme, initTheme, setTheme } from "../../scripts/theme";
+	import type { ThemeMode } from "../../scripts/theme";
+
+	function updateThemeButtons(mode: ThemeMode) {
+		document.querySelectorAll("[data-theme-mode]").forEach((el) => {
+			const active = el.getAttribute("data-theme-mode") === mode;
+			el.classList.toggle("bg-accent/15", active);
+			el.classList.toggle("text-accent", active);
+			el.classList.toggle("text-secondary", !active);
+			el.setAttribute("aria-pressed", String(active));
+		});
+	}
+
+	initTheme();
+	updateThemeButtons(getStoredTheme());
+
+	document.addEventListener("click", (e) => {
+		const target = (e.target as HTMLElement).closest(
+			"[data-action], [data-theme-mode]",
+		);
+		if (!target) return;
+		const themeMode = (target as HTMLElement).dataset.themeMode as
+			| ThemeMode
+			| undefined;
+		if (themeMode) {
+			setTheme(themeMode);
+			updateThemeButtons(themeMode);
+			return;
+		}
+		const action = (target as HTMLElement).dataset.action;
+		if (action === "close-drawer") closeNav();
+		else if (action === "open-search") openSearch();
+	});
+
+	// swup 跳转后更新导航项 active class
+	function updateActiveLinks(newPath: string) {
+		document.querySelectorAll("[data-nav-link]").forEach((el) => {
+			const link = el as HTMLElement;
+			const linkPath = link.dataset.path || "";
+			const active = newPath === linkPath;
+
+			// 更新序号颜色
+			const numSpan = link.querySelector("[data-nav-index]");
+			if (numSpan) {
+				numSpan.classList.toggle("text-accent", active);
+				numSpan.classList.toggle("text-white/25", !active);
+			}
+			// 更新标题颜色
+			const titleSpan = link.querySelector("[data-nav-label]");
+			if (titleSpan) {
+				titleSpan.classList.toggle("text-white", active);
+				titleSpan.classList.toggle("text-white/55", !active);
+			}
+			// 更新左侧标记
+			const bar = link.querySelector("[data-nav-bar]");
+			if (bar) {
+				bar.classList.toggle("opacity-100", active);
+				bar.classList.toggle("opacity-0", !active);
+			}
+		});
+	}
+
+	window.addEventListener("path:change", ((e: CustomEvent) => {
+		updateActiveLinks(e.detail.path);
+	}) as EventListener);
+</script>

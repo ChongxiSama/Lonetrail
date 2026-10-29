@@ -1,111 +1,159 @@
-// Lonetrail — site config loaded from YAML
-// Edit src/site.yml to customize your site.
+import I18nKey from "./i18n/i18nKey";
+import yaml from "./site.yml";
 import type {
-	ExpressiveCodeConfig,
-	LicenseConfig,
 	NavBarConfig,
+	NavBarLink,
 	ProfileConfig,
 	SiteConfig,
 } from "./types/config";
-import { LinkPreset } from "./types/config";
-import yaml from "./site.yml";
 
-const cfg = yaml as {
+type NavEntry = {
+	key?: string;
+	name?: string;
+	url: string;
+	external?: boolean;
+};
+
+type RawConfig = {
 	site: {
 		title: string;
+		title_en: string;
 		subtitle: string;
+		subtitle_en: string;
+		description: string;
+		description_en: string;
 		url: string;
 		lang: string;
 		author: string;
 		email: string;
 		favicon: string;
 		banner: string;
+		banner_credit: string;
+		banner_credit_url: string;
 		og_image: string;
+		avatar: string;
+		version: string;
 	};
 	profile: {
-		avatar: string;
 		name: string;
 		bio: string;
+		bio_en: string;
 		links: { name: string; icon: string; url: string }[];
 	};
-	nav: Record<string, string>[];
-	features: {
-		breadcrumb: boolean;
-		comments: boolean;
-		search: boolean;
-		donate: boolean;
-		rss_feed: boolean;
-		sitemap: boolean;
-		related_posts: boolean;
-		series: boolean;
-		license: boolean;
+	nav: NavEntry[];
+	taxonomy: {
+		tags: Record<string, string>;
+		categories: Record<string, string>;
 	};
-	seo: {
-		enable_json_ld: boolean;
-		breadcrumb: boolean;
-		keywords: string;
-		same_as: string[];
-	};
-	services: {
-		posthog: { api_key: string; api_host: string };
-		webmention: { url: string };
-		blogsclub: { badge_url: string };
-		issue_tracker: { url: string };
-	};
-	trusted_domains: string[];
 	copyright: {
-		text: string;
 		site_name: string;
 		license: string;
 		license_url: string;
 	};
+	trusted_domains: string[];
+};
+
+const cfg = yaml as RawConfig;
+
+const NAV_KEYS: Record<string, I18nKey> = {
+	home: I18nKey.home,
+	archive: I18nKey.archive,
+	series: I18nKey.navSeries,
+	essays: I18nKey.navEssays,
+	about: I18nKey.about,
+	subscribe: I18nKey.subscribe,
 };
 
 export const siteConfig: SiteConfig = {
 	title: cfg.site.title,
 	subtitle: cfg.site.subtitle,
-	lang: cfg.site.lang,
+	lang: cfg.site.lang as SiteConfig["lang"],
 	banner: {
-		enable: true,
+		enable: Boolean(cfg.site.banner),
 		src: cfg.site.banner,
 		position: "center",
-		credit: { enable: false, text: "", url: "" },
+		credit: {
+			enable: Boolean(cfg.site.banner_credit),
+			text: cfg.site.banner_credit,
+			url: cfg.site.banner_credit_url,
+		},
 	},
-	toc: { enable: true, depth: 3 },
+	toc: {
+		enable: true,
+		depth: 3,
+	},
 	showPageViews: false,
-	favicon: [{ src: cfg.site.favicon, sizes: "32x32" }],
+	favicon: [
+		{ src: cfg.site.favicon, sizes: "32x32" },
+		{ src: cfg.site.favicon, sizes: "192x192" },
+	],
+};
+
+export const siteMeta = {
+	url: cfg.site.url,
+	lang: cfg.site.lang.replace("_", "-"),
+	author: cfg.site.author,
+	email: cfg.site.email,
+	ogImage: cfg.site.og_image,
+	avatar: cfg.site.avatar,
+	version: cfg.site.version,
+	titleEn: cfg.site.title_en,
+	subtitleEn: cfg.site.subtitle_en,
+	descriptionEn: cfg.site.description_en,
 };
 
 export const navBarConfig: NavBarConfig = {
-	links: cfg.nav.map((item) => {
-		const [name, url] = Object.entries(item)[0];
-		return { name, url };
-	}),
+	links: cfg.nav.map(
+		(item): NavBarLink => ({
+			name: item.name ?? item.key ?? "",
+			url: item.url,
+			external: item.external,
+			labelKey: item.key ? NAV_KEYS[item.key] : undefined,
+		}),
+	),
 };
 
 export const profileConfig: ProfileConfig = {
-	avatar: cfg.profile.avatar,
+	avatar: cfg.site.avatar,
 	name: cfg.profile.name,
 	bio: cfg.profile.bio,
 	links: cfg.profile.links,
 };
 
-export const licenseConfig: LicenseConfig = {
-	enable: cfg.features.license,
-	name: cfg.copyright.license,
-	url: cfg.copyright.license_url,
-};
+export const profileBioEn = cfg.profile.bio_en;
+
+export const taxonomyConfig = cfg.taxonomy;
 
 export const copyrightConfig = {
-	enable: false,
-	siteName: cfg.copyright.site_name || cfg.site.title,
-	startYear: 2025,
-	endYear: 2026,
+	siteName: cfg.copyright.site_name,
+	license: cfg.copyright.license,
+	licenseUrl: cfg.copyright.license_url,
 };
 
-export const expressiveCodeConfig: ExpressiveCodeConfig = {
-	theme: "github-dark",
+export const trustedDomains: string[] = cfg.trusted_domains;
+
+export const localeConfig = {
+	defaultLocale: "zh" as const,
+	locales: ["zh", "en"] as const,
+	translatedPaths: ["/", "/archive/", "/about/", "/subscribe/", "/essays/"],
 };
 
-// Template-wide exports for YAML-driven injection
-export const siteYaml = cfg;
+export const featureConfig = {
+	comments: true,
+	search: true,
+	analytics: "none" as "none" | "umami",
+};
+
+export const integrationConfig = {
+	twikoo: {
+		envId: "",
+	},
+	umami: {
+		websiteId: "",
+		domains: "",
+	},
+	posthog: {
+		key: "",
+		host: "https://app.posthog.com",
+	},
+};

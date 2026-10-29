@@ -1,85 +1,90 @@
 ---
-import { Icon } from "astro-icon/components";
-import { profileConfig, siteConfig } from "../../config";
+import { profileConfig } from "../../config";
+import { DEFAULT_LOCALE, type Locale } from "../../i18n/locales";
+import { getTagLabel } from "../../i18n/taxonomy";
+import { formatDate } from "../../utils/date-utils";
+import { StripeFooter } from "../ui/StripeFooter.tsx";
 
 interface Props {
 	title: string;
 	slug: string;
 	published: Date;
 	tags?: string[];
+	description?: string;
+	lang?: Locale;
 }
 
-const { title, slug, published, tags } = Astro.props;
+const {
+	title,
+	published,
+	tags,
+	description,
+	lang = DEFAULT_LOCALE,
+} = Astro.props;
 
-const dateStr = published
-	.toLocaleDateString("zh-CN", {
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-	})
-	.replace(/\//g, ".");
+const dateStr = formatDate(published).replace(/\//g, ".");
 ---
 
-<header class="relative w-full max-w-[840px] bg-lt-ink text-lt-bg paper-texture shadow-2xl px-6 md:px-16 py-12 md:py-16 overflow-hidden flex-shrink-0">
-    {/* 动态背景图层 */}
+<header class="relative w-full max-w-[840px] bg-hero text-on-hero paper-texture shadow-2xl px-6 md:px-16 pt-8 pb-12 md:pt-10 md:pb-14 overflow-hidden flex-shrink-0">
     <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <div 
+        <div
             class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-40"
-            style="background-image: url('/images/chongxi-about-bg.webp'); filter: brightness(0.8) saturate(1.2) contrast(1.1);"
+            data-parallax
+            style="background-image: url('/images/about-bg.webp'); filter: brightness(0.8) saturate(1.2) contrast(1.1); will-change: transform;"
         ></div>
-        {/* 氛围渐变叠加 */}
-        <div class="absolute inset-0 bg-gradient-to-br from-lt-ink/90 via-lt-ink/40 to-lt-ink/90"></div>
-        {/* 科技网格 */}
+        <div class="absolute inset-0 bg-gradient-to-br from-hero/90 via-hero/40 to-hero/90"></div>
         <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[length:40px_40px]"></div>
     </div>
 
-    <div class="absolute -top-4 -right-10 font-display text-[180px] text-lt-bg opacity-[0.03] pointer-events-none select-none uppercase">REPORT</div>
+    <div class="absolute -top-4 -right-10 font-deco text-[180px] text-on-hero opacity-[0.03] pointer-events-none select-none uppercase">REPORT</div>
 
-    <div class="relative z-10 space-y-12">
-        <div class="flex justify-between items-start">
-            <div class="space-y-1">
-                <div class="flex items-center gap-2">
-                    <div class="w-[3px] h-[10px] bg-lt-accent"></div>
-                    <span class="text-[11px] font-mono tracking-[0.2em] font-bold text-lt-bg/80 uppercase">Chapter_Post // Field_Report</span>
-                </div>
-                <p class="text-[11px] font-mono text-lt-bg/40 uppercase tracking-widest">Post_Ref: RL-{slug.toUpperCase().slice(0, 8)}</p>
-            </div>
-            <p class="text-[11px] font-mono text-lt-bg/40 uppercase tracking-[0.3em]">{dateStr}</p>
+    <div class="relative z-10 space-y-6">
+        <!-- Row 1: Report series + date -->
+        <div class="flex items-center justify-between">
+            <span class="font-deco text-[11px] font-bold text-on-hero/70 uppercase tracking-[0.3em]">
+                LONETRAIL Technical Note
+            </span>
+            <span class="font-date text-[12px] text-on-hero/50 uppercase tracking-[0.12em]">
+                {dateStr}
+            </span>
         </div>
 
-        <h1 class="post-title font-cn font-black text-[36px] md:text-[42px] leading-[1.1] tracking-tighter text-lt-bg">
+        <!-- Title -->
+        <h1 class="post-title font-heading font-black text-[36px] md:text-[42px] leading-[1.1] tracking-tight text-on-hero uppercase">
             {title}
         </h1>
 
-        <div class="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between gap-8">
+        {description && (
+            <p class="font-cn text-[12px] md:text-[13px] text-on-hero/55 leading-relaxed">
+                {description}
+            </p>
+        )}
+
+        <div class="border-b-[2pt] border-white/15"></div>
+
+        <!-- Row 3: Author + Tags -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div class="flex items-center gap-4">
-                <div class="relative w-10 h-10 bg-white/5 border border-white/10 flex-shrink-0 overflow-hidden">
-                    <img src={profileConfig.avatar} alt={profileConfig.name} class="w-full h-full object-cover no-styling" />
+                <div class="relative w-9 h-9 bg-white/5 border border-white/10 flex-shrink-0 overflow-hidden">
+                    <img src={profileConfig.avatar} alt={profileConfig.name} width="36" height="36" class="w-full h-full object-cover no-styling" />
                 </div>
                 <div class="flex flex-col">
                     <div class="flex items-center gap-2">
-                        <span class="font-display text-[15px] text-lt-bg leading-none uppercase">{profileConfig.name}</span>
-                        <a
-                            href={siteConfig.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="p-0.5 border border-lt-accent text-lt-accent hover:bg-lt-accent hover:text-lt-bg transition-all active:scale-95 bg-lt-accent/5 rounded-sm"
-                            title={siteConfig.url}
-                        >
-                            <Icon name="material-symbols:home-outline-rounded" class="w-3 h-3" />
-                        </a>
+                        <span class="font-deco text-[11px] text-on-hero/60 uppercase tracking-widest">Author:</span>
+                        <span class="font-display text-[14px] text-on-hero leading-none uppercase font-bold">{profileConfig.name}</span>
                     </div>
                 </div>
             </div>
-            <div class="flex gap-2 flex-wrap">
-                {tags?.map(tag => (
-                    <span class="px-2 py-0.5 text-[10px] font-mono border border-white/20 text-lt-bg/50 rounded-sm uppercase tracking-widest">#{tag}</span>
+            {tags && tags.length > 0 && (
+            <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-deco text-[10px] text-on-hero/40 uppercase tracking-widest">Tags:</span>
+                {tags.map(tag => (
+                    <span class="px-2 py-0.5 text-[10px] font-deco border border-white/15 text-on-hero/50 rounded-sm uppercase tracking-widest">#{getTagLabel(tag, lang)}</span>
                 ))}
             </div>
+            )}
         </div>
     </div>
 
-    <div class="absolute bottom-0 left-0 right-0 h-[3px] flex">
-        <div class="bg-rl-teal w-1/3"></div><div class="bg-rl-gold w-1/3"></div><div class="bg-rl-red w-1/3"></div>
-    </div>
+    <StripeFooter />
 </header>

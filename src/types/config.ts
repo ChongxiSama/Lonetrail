@@ -1,17 +1,9 @@
 import type { AUTO_MODE, DARK_MODE, LIGHT_MODE } from "@constants/constants";
+import type I18nKey from "@i18n/i18nKey";
 export type SiteConfig = {
 	title: string;
 	subtitle: string;
-	lang:
-		| "en"
-		| "zh_CN"
-		| "ja"
-		| "ko"
-		| "es"
-		| "th"
-		| "vi"
-		| "tr"
-		| "id";
+	lang: "en" | "zh_CN" | "ja" | "ko" | "es" | "th" | "vi" | "tr" | "id";
 	banner: {
 		enable: boolean;
 		src: string;
@@ -43,6 +35,8 @@ export type NavBarLink = {
 	name: string;
 	url: string;
 	external?: boolean;
+	/** Optional i18n key; when present the label is resolved per locale. */
+	labelKey?: I18nKey;
 };
 export type NavBarConfig = {
 	links: (NavBarLink | LinkPreset)[];
@@ -51,6 +45,8 @@ export type ProfileConfig = {
 	avatar?: string;
 	name: string;
 	bio?: string;
+	orcid?: string;
+	tags?: string[];
 	links: {
 		name: string;
 		url: string;

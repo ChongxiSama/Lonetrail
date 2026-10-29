@@ -3,9 +3,9 @@ import { h } from "hastscript";
 
 export function pluginLanguageBadge(): ExpressiveCodePlugin {
 	return {
-		name: "Rhine Lab Language Badge",
+		name: "Lonetrail Language Badge",
 		baseStyles: `
-            .rhine-badge {
+            .lonetrail-badge {
                 display: flex;
                 align-items: center;
                 gap: 0.75rem;
@@ -13,19 +13,19 @@ export function pluginLanguageBadge(): ExpressiveCodePlugin {
                 background: #24221E;
                 border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             }
-            .rhine-dots {
+            .lonetrail-dots {
                 display: flex;
                 gap: 0.25rem;
             }
-            .rhine-dot {
+            .lonetrail-dot {
                 width: 6px;
                 height: 6px;
             }
-            .rhine-dot-red { background: #A33332; opacity: 0.8; }
-            .rhine-dot-gold { background: #C29145; opacity: 0.8; }
-            .rhine-dot-teal { background: #4B8D9E; opacity: 0.8; }
+            .lonetrail-dot-red { background: #A33332; opacity: 0.8; }
+            .lonetrail-dot-gold { background: #C29145; opacity: 0.8; }
+            .lonetrail-dot-teal { background: #4B8D9E; opacity: 0.8; }
             
-            .rhine-protocol {
+            .lonetrail-protocol {
                 font-family: var(--font-mono);
                 font-size: 10px;
                 font-weight: 900;
@@ -33,7 +33,7 @@ export function pluginLanguageBadge(): ExpressiveCodePlugin {
                 color: rgba(237, 230, 214, 0.8);
                 text-transform: uppercase;
             }
-            .rhine-lang {
+            .lonetrail-lang {
                 color: #D4621A;
             }
         `,
@@ -41,18 +41,18 @@ export function pluginLanguageBadge(): ExpressiveCodePlugin {
 			postprocessRenderedBlock: ({ renderData, codeBlock }) => {
 				const lang = codeBlock.language.toUpperCase() || "PLAINTEXT";
 
-				const badge = h("div", { class: "rhine-badge" }, [
-					h("div", { class: "rhine-dots" }, [
-						h("div", { class: "rhine-dot rhine-dot-red" }),
-						h("div", { class: "rhine-dot rhine-dot-gold" }),
-						h("div", { class: "rhine-dot rhine-dot-teal" }),
+				const badge = h("div", { class: "lonetrail-badge" }, [
+					h("div", { class: "lonetrail-dots" }, [
+						h("div", { class: "lonetrail-dot lonetrail-dot-red" }),
+						h("div", { class: "lonetrail-dot lonetrail-dot-gold" }),
+						h("div", { class: "lonetrail-dot lonetrail-dot-teal" }),
 					]),
 					h("div", {
-						style: "h-3 w-[1px] bg-white/10 mx-1",
+						class: "h-3 w-[1px] bg-white/10 mx-1",
 					}),
-					h("span", { class: "rhine-protocol" }, [
+					h("span", { class: "lonetrail-protocol" }, [
 						"PRTCL // ",
-						h("span", { class: "rhine-lang" }, lang),
+						h("span", { class: "lonetrail-lang" }, lang),
 					]),
 				]);
 

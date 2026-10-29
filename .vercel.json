@@ -1,6 +1,0 @@
-{
-  "framework": "astro",
-  "buildCommand": "npx pnpm install --frozen-lockfile && npx pnpm build",
-  "installCommand": "npx pnpm install --frozen-lockfile",
-  "outputDirectory": "dist"
-}

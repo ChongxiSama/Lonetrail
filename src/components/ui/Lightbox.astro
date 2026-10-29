@@ -1,0 +1,47 @@
+---
+import "photoswipe/style.css";
+---
+<script>
+    import PhotoSwipeLightbox from 'photoswipe/lightbox';
+    let lightbox: PhotoSwipeLightbox | null = null;
+    function setupLightbox() {
+        if (lightbox) {
+            lightbox.destroy();
+        }
+        lightbox = new PhotoSwipeLightbox({
+            gallery: '.custom-md img, #post-cover img, .essay-card img',
+            pswpModule: () => import('photoswipe'),
+            bgOpacity: 0.8,
+            showHideAnimationType: 'zoom',
+            imageClickAction: 'close',
+            tapAction: 'close',
+            padding: { top: 20, bottom: 20, left: 20, right: 20 }
+        });
+        lightbox.addFilter('domItemData', (itemData, element) => {
+            if (element instanceof HTMLImageElement) {
+                itemData.src = element.src;
+                itemData.w = Number(element.naturalWidth || window.innerWidth);
+                itemData.h = Number(element.naturalHeight || window.innerHeight);
+                itemData.msrc = element.src;
+            }
+            return itemData;
+        });
+        lightbox.init();
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupLightbox);
+    } else {
+        setupLightbox();
+    }
+    document.addEventListener('swup:content:replace', () => {
+        requestAnimationFrame(setupLightbox);
+    });
+</script>
+<style is:global>
+    .pswp img {
+        max-height: none !important;
+        max-width: none !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+    }
+</style>

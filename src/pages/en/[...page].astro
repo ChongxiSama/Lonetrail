@@ -1,0 +1,21 @@
+---
+import type { GetStaticPaths, Page } from "astro";
+import HomePage from "../../components/pages/HomePage.astro";
+import { PAGE_SIZE } from "../../constants/constants";
+import { getSortedPosts, type SluggedPost } from "../../utils/content-utils";
+
+export const getStaticPaths = (async ({ paginate }) => {
+	const posts = await getSortedPosts("en");
+	return paginate(posts, { pageSize: PAGE_SIZE }).filter(
+		(result) => result.props.page.currentPage > 1,
+	);
+}) satisfies GetStaticPaths;
+
+interface Props {
+	page: Page<SluggedPost>;
+}
+
+const { page } = Astro.props;
+---
+
+<HomePage page={page} />

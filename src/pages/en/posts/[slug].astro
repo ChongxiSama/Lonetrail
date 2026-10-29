@@ -1,0 +1,21 @@
+---
+import { getSortedPosts } from "@utils/content-utils";
+import PostPage from "../../../components/pages/PostPage.astro";
+
+/**
+ * Real English translations. `getSortedPosts("en")` only returns entries
+ * authored as `<slug>.en.md`, so untranslated posts keep falling back to the
+ * Chinese original through Astro's i18n rewrite.
+ */
+export async function getStaticPaths() {
+	const posts = await getSortedPosts("en");
+	return posts.map((entry) => ({
+		params: { slug: entry.slug },
+		props: { entry, posts },
+	}));
+}
+
+const { entry, posts } = Astro.props;
+---
+
+<PostPage entry={entry} posts={posts} translated={true} />

@@ -1,0 +1,265 @@
+/* ── Skeleton screen ── */
+.skeleton-root {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #EDE6D6;
+    animation: skeleton-in 160ms ease-out both;
+}
+
+@keyframes skeleton-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.dark .skeleton-root {
+    background: #1F1C17;
+}
+
+/* Hero section — matches PostHero */
+.skeleton-hero {
+    position: relative;
+    width: 100%;
+    max-width: 840px;
+    background: #1A1814;
+    padding: 40px 24px 56px;
+    overflow: hidden;
+}
+
+@media (min-width: 768px) {
+    .skeleton-hero {
+        padding: 48px 64px 64px;
+    }
+}
+
+/* Light content section — matches article */
+.skeleton-light {
+    width: 100%;
+    max-width: 840px;
+    background: #EDE6D6;
+    padding: 40px 24px;
+    min-height: 400px;
+}
+.dark .skeleton-light {
+    background: #1F1C17;
+}
+
+@media (min-width: 768px) {
+    .skeleton-light {
+        padding: 64px 64px;
+    }
+}
+
+/* Dark card section — matches RelatedNodes / Discussion */
+.skeleton-dark {
+    position: relative;
+    width: 100%;
+    max-width: 840px;
+    background: #1A1814;
+    padding: 40px 24px;
+}
+
+@media (min-width: 768px) {
+    .skeleton-dark {
+        padding: 48px 64px;
+    }
+}
+
+/* StripeFooter — 3px 3-color bar at bottom of dark sections */
+.skeleton-stripe {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    display: flex;
+    z-index: 10;
+}
+
+.skeleton-stripe > div {
+    flex: 1 1 0;
+}
+
+.skeleton-stripe-teal {
+    background: #4B8D9E;
+}
+
+.skeleton-stripe-gold {
+    background: #C29145;
+}
+
+.skeleton-stripe-red {
+    background: #A33332;
+}
+
+/* Shared pulse element */
+.skeleton-pulse {
+    position: relative;
+    overflow: hidden;
+    border-radius: 4px;
+    background: rgba(200, 191, 168, 0.35);
+}
+.dark .skeleton-pulse {
+    background: rgba(46, 41, 34, 0.55);
+}
+.skeleton-pulse::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.35),
+        transparent
+    );
+    transform: translateX(-100%);
+    animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+.dark .skeleton-pulse::after {
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(120, 110, 95, 0.35),
+        transparent
+    );
+}
+
+.skeleton-pulse--dim {
+    opacity: 0.5;
+}
+
+.skeleton-pulse--dimmer {
+    opacity: 0.3;
+}
+
+/* Hero elements */
+.skeleton-hero-label {
+    height: 0.875rem;
+    width: 33%;
+    margin-bottom: 2rem;
+}
+
+.skeleton-hero-title {
+    height: 3rem;
+    width: 82%;
+    margin-bottom: 1.5rem;
+}
+
+.skeleton-hero-divider {
+    height: 2px;
+    width: 100%;
+    margin-bottom: 1.5rem;
+    border-radius: 0;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.skeleton-hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.skeleton-avatar {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.skeleton-meta-text {
+    height: 0.875rem;
+    width: 8rem;
+}
+
+/* Light article body */
+.skeleton-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.skeleton-body-line {
+    height: 1.2rem;
+}
+
+/* Dark card elements */
+.skeleton-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.skeleton-accent-bar {
+    width: 3px;
+    height: 10px;
+    border-radius: 0;
+    background: rgb(var(--ce-accent));
+}
+
+.skeleton-section-label {
+    height: 0.75rem;
+    width: 22%;
+}
+
+.skeleton-section-line {
+    flex: 1;
+    height: 1px;
+    border-radius: 0;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.skeleton-link-item {
+    height: 3rem;
+    width: 100%;
+    border-radius: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    margin-bottom: 0;
+}
+
+/* Footer */
+.skeleton-footer-line {
+    height: 1rem;
+    width: 50%;
+    margin-bottom: 0.75rem;
+}
+
+.skeleton-footer-line:last-child {
+    width: 35%;
+    margin-bottom: 0;
+}
+
+@keyframes skeleton-sweep {
+    to { transform: translateX(100%); }
+}
+
+/* ── Enter animation ── */
+@keyframes page-in-down {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes page-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .skeleton-pulse::after {
+        animation: none;
+        opacity: 0;
+    }
+}

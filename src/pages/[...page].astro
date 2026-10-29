@@ -1,16 +1,8 @@
 ---
-import type { CollectionEntry } from "astro:content";
-import ArchiveHeader from "@components/pages/ArchiveHeader.astro";
-import { PocketCard } from "@components/pages/PocketCard";
-import Pagination from "@components/ui/Pagination.astro";
-// SideDrawer import removed.
+import HomePage from "@components/pages/HomePage.astro";
 import type { GetStaticPaths, Page } from "astro";
-import PostCardNew from "../components/blog/PostCardNew.astro";
-import { profileConfig, siteConfig } from "../config";
 import { PAGE_SIZE } from "../constants/constants";
-import Layout from "../layouts/Layout.astro";
-import { getSortedPosts } from "../utils/content-utils";
-import "../styles/cepato.css";
+import { getSortedPosts, type SluggedPost } from "../utils/content-utils";
 
 export const getStaticPaths = (async ({ paginate }) => {
 	const allBlogPosts = await getSortedPosts();
@@ -18,57 +10,10 @@ export const getStaticPaths = (async ({ paginate }) => {
 }) satisfies GetStaticPaths;
 
 interface Props {
-	page: Page<CollectionEntry<"posts">>;
+	page: Page<SluggedPost>;
 }
 
 const { page } = Astro.props;
-
-const navItems = [
-	{ label: "Home", href: "/" },
-	{ label: "Archive", href: "/archive" },
-	{ label: "Friends", href: "/links" },
-	{ label: "About", href: "/about" },
-];
 ---
 
-<Layout description={siteConfig.subtitle}>
-	<div class="py-12 md:py-16 flex flex-col items-center gap-0 overflow-x-hidden pt-14">
-
-		<ArchiveHeader
-			title={siteConfig.title}
-			count={page.total}
-			variant="dark"
-		/>
-
-		{page.data.map((entry: any, index: number) => (
-			<PostCardNew
-				entry={entry}
-				title={entry.data.title}
-				category={entry.data.category}
-				published={entry.data.published}
-				url={`/posts/${entry.slug}`}
-				description={entry.data.description}
-				index={index + page.start}
-			/>
-		))}
-
-		<Pagination
-			currentPage={page.currentPage}
-			totalPages={page.lastPage}
-			prevHref={page.url.prev}
-			nextHref={page.url.next}
-		/>
-
-		<PocketCard
-			client:visible
-			name={profileConfig.name}
-			slogan={profileConfig.bio ?? ""}
-			avatarSrc={profileConfig.avatar}
-			links={[
-				{ label: "GH", href: "https://github.com/ChongxiSama/Lonetrail" },
-				{ label: "TG", href: "https://t.me/CEPATECH" },
-				{ label: "BI", href: "https://m.bilibili.com/space/500042199" }
-			]}
-		/>
-	</div>
-</Layout>
+<HomePage page={page} />

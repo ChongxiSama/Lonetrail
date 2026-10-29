@@ -1,27 +1,16 @@
 ---
-import { siteYaml } from "../../config";
+interface Props {
+	title?: string;
+}
 
-const enableComments = siteYaml.features.comments;
+const { title = "Chapter_08 // Discussion" } = Astro.props;
 ---
-{enableComments && (
-<div class="relative w-full max-w-[840px] bg-lt-bg paper-texture shadow-2xl px-6 md:px-16 py-12 border-t border-lt-border/10" data-nosnippet aria-label="Comments">
-    <div class="flex items-center gap-3 mb-8">
-        <div class="w-[3px] h-[10px] bg-lt-accent"></div>
-        <h2 class="text-[11px] font-mono font-bold tracking-[0.2em] uppercase text-lt-ink">05 // Transmission_Log_Capture</h2>
-    </div>
-    <div class="relative transition-all duration-300 min-h-[200px]" id="comments">
-        <slot />
-    </div>
-</div>
-)}
-
-<style is:global>
-  #comments {
-    width: 100%;
-    position: relative;
-    z-index: 10;
-  }
-  .atk-main-editor, .atk-comment-wrap {
-    @apply !bg-lt-surface !border !border-lt-border !rounded-sm !p-4 !transition-all;
-  }
-</style>
+<aside data-nosnippet aria-label="Comments">
+	<div class="flex items-center gap-2 mb-8">
+		<div class="w-[3px] h-[10px] bg-accent"></div>
+		<span class="text-[11px] font-deco tracking-[0.2em] font-semibold text-on-hero uppercase">{title}</span>
+	</div>
+	<div class="relative transition-all duration-300 min-h-[200px]" id="comments">
+		<slot />
+	</div>
+</aside>

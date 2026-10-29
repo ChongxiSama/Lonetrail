@@ -1,29 +1,49 @@
 ---
-import PostHog from "../components/posthog.astro";
+import Umami from "../components/umami.astro";
 import { getMetaDescription, getPageTitle } from "../seo/meta";
 import { generateJsonLd } from "../seo/schema";
 import "../styles/tokens.css";
-import "../styles/markdown.css";
-import "../styles/transition.css";
-import "../styles/expressive-code.css";
+import "../styles/swup-slide.css";
+import "../styles/lonetrail.css";
+import "../styles/fonts.css";
+import "../styles/twikoo.css";
 import { Font } from "astro:assets";
-import { ClientRouter } from "astro:transitions";
-import ConfigCarrier from "@components/layout/ConfigCarrier.astro";
-import { SideDrawer } from "@components/layout/SideDrawer";
 import Footer from "@components/layout/Footer.astro";
-import { navBarConfig, profileConfig, siteConfig } from "@/config";
-import { i18n } from "@i18n/translation";
+import MobileNav from "@components/layout/MobileNav.astro";
+import SideDrawer from "@components/layout/SideDrawer.astro";
+import Lightbox from "@components/ui/Lightbox.astro";
+import { SITE_URL } from "@constants/site";
 import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
+import {
+	featureConfig,
+	navBarConfig,
+	profileConfig,
+	siteConfig,
+	siteMeta,
+} from "@/config";
+import { SearchPanel } from "../components/ui/SearchPanel.tsx";
 import {
 	BANNER_HEIGHT,
 	BANNER_HEIGHT_EXTEND,
-	DEFAULT_BANNER_ASPECT_RATIO,
 	MAIN_PANEL_OVERLAPS_BANNER_HEIGHT,
 	PAGE_WIDTH,
 } from "../constants/constants";
 import { defaultFavicons } from "../constants/icon";
-import { LinkPresets } from "../constants/link-presets";
-import { type Favicon, LinkPreset, type NavBarLink } from "../types/config";
+import { resolveNavLink } from "../constants/link-presets";
+import {
+	DEFAULT_LOCALE,
+	getSwitchLocalePath,
+	hasLocaleVersion,
+	isFallbackPath,
+	LOCALE_META,
+	type Locale,
+	localizePath,
+	resolveLocale,
+	stripLocaleFromPath,
+} from "../i18n/locales";
+import { getSiteTitle } from "../i18n/site";
+import { type Favicon, type NavBarLink } from "../types/config";
 import { isHomePath, makeUrl } from "../utils/url-utils";
 
 interface Props {
@@ -33,13 +53,16 @@ interface Props {
 	lang?: string;
 	setOGTypeArticle?: boolean;
 	category?: string;
-	entities?: any[];
+	entities?: Record<string, unknown>[];
 	citations?: string[];
 	published?: Date;
 	updated?: Date;
 	tags?: string[];
 	wordCount?: number;
-	bannerAspectRatio?: number;
+	hideFooter?: boolean;
+	noindex?: boolean;
+	/** A real translated page, so i18n fallback rules must not apply. */
+	translated?: boolean;
 }
 let {
 	title,
@@ -54,39 +77,58 @@ let {
 	updated,
 	tags,
 	wordCount,
-	bannerAspectRatio,
+	hideFooter,
+	noindex = false,
+	translated = false,
 } = Astro.props;
-let links: NavBarLink[] = navBarConfig.links.map(
-	(item: NavBarLink | LinkPreset): NavBarLink => {
-		if (typeof item === "number") {
-			return LinkPresets[item];
-		}
-		return item;
-	},
-);
-const isHomePage = isHomePath(Astro.url.pathname);
-const enableBanner = siteConfig.banner.enable;
-const pageTitle = getPageTitle(title);
-const metaDescription = getMetaDescription(description);
-const siteLang = (lang || siteConfig.lang).replace("_", "-");
+const locale = resolveLocale(Astro.currentLocale, Astro.url.pathname);
+const localeMeta = LOCALE_META[locale];
+const links: NavBarLink[] = navBarConfig.links.map((item) => {
+	const link = resolveNavLink(item, locale);
+	if (link.external) return link;
+	return { ...link, url: localizePath(link.url, locale) };
+});
 const trailingSlashNormalizer = /\/?$/;
-const postsBasePath = makeUrl("/posts/").replace(trailingSlashNormalizer, "/");
 const currentPath = Astro.url.pathname.replace(trailingSlashNormalizer, "/");
-const isPostPage = currentPath.startsWith(postsBasePath);
-let canonicalURL = new URL(Astro.url.pathname, Astro.site).toString();
+const barePath = stripLocaleFromPath(currentPath).replace(
+	trailingSlashNormalizer,
+	"/",
+);
+const isHomePage = barePath === "/" || isHomePath(barePath);
+const pageTitle = getPageTitle(title, locale);
+const metaDescription = getMetaDescription(description, locale);
+const siteLang = lang || localeMeta.htmlLang;
+const postsBasePath = makeUrl("/posts/").replace(trailingSlashNormalizer, "/");
+const isPostPage = barePath.startsWith(postsBasePath);
+
+// A route rendered at `/en/...` without a dedicated English page is a
+// fallback of the Chinese original: keep it out of the index and point the
+// canonical back to zh to avoid duplicate content.
+const isFallback = !translated && isFallbackPath(Astro.url.pathname, locale);
+const hasLocalizedPair = translated || hasLocaleVersion(Astro.url.pathname);
+const localizedHref = (target: Locale) => localizePath(currentPath, target);
+const absoluteHref = (target: Locale) =>
+	new URL(localizedHref(target), Astro.site).toString();
+let canonicalURL = new URL(
+	isFallback ? localizedHref(DEFAULT_LOCALE) : localizedHref(locale),
+	Astro.site,
+).toString();
 if (!canonicalURL.endsWith("/")) {
 	const lastPart = canonicalURL.split("/").pop();
 	if (lastPart && !lastPart.includes(".")) {
 		canonicalURL += "/";
 	}
 }
+const switchLocale = localeMeta.alternate;
+const switchHref = getSwitchLocalePath(Astro.url.pathname, switchLocale);
+const shouldNoindex = noindex || isFallback;
 const favicons: Favicon[] =
 	siteConfig.favicon.length > 0 ? siteConfig.favicon : defaultFavicons;
-let ogImage = new URL(banner || "(cfg as any).site.og_image", Astro.site).toString();
+let ogImage = new URL(banner || siteMeta.ogImage, Astro.site).toString();
 const ogType = setOGTypeArticle ? "article" : "website";
-const siteName = siteConfig.title;
+const siteName = getSiteTitle(locale);
 const jsonLd = generateJsonLd({
-	siteUrl: Astro.site?.toString() || "https://your-site.com/",
+	siteUrl: Astro.site?.toString() || SITE_URL,
 	canonicalURL,
 	title,
 	metaDescription,
@@ -103,12 +145,16 @@ const jsonLd = generateJsonLd({
 	citations,
 	currentPath,
 });
-// ... (rest of the file remains)
-const breadcrumbItems: any[] = [
+const breadcrumbItems: {
+	"@type": string;
+	position: number;
+	name: string;
+	item: string | URL | undefined;
+}[] = [
 	{
 		"@type": "ListItem",
 		position: 1,
-		name: "Home",
+		name: i18n(I18nKey.home, locale),
 		item: Astro.site,
 	},
 ];
@@ -118,7 +164,10 @@ if (isPostPage) {
 			"@type": "ListItem",
 			position: 2,
 			name: category,
-			item: new URL(`/categories/${category}/`, Astro.site).toString(),
+			item: new URL(
+				localizePath(`/categories/${category}/`, DEFAULT_LOCALE),
+				Astro.site,
+			).toString(),
 		});
 		breadcrumbItems.push({
 			"@type": "ListItem",
@@ -142,56 +191,114 @@ if (isPostPage) {
 		item: canonicalURL,
 	});
 }
-jsonLd["@graph"].push({
+(jsonLd["@graph"] as Record<string, unknown>[]).push({
 	"@type": "BreadcrumbList",
 	"@id": `${canonicalURL}#breadcrumb`,
 	itemListElement: breadcrumbItems,
 });
 ---
 <!DOCTYPE html>
-<html lang={siteLang} class="bg-[var(--page-bg)] text-[14px] md:text-[15px] 2xl:text-[16px]">
+<html
+	lang={siteLang}
+	class="bg-[var(--page-bg)] text-[14px] md:text-[15px] 2xl:text-[16px]"
+	data-en-href={hasLocalizedPair && locale === DEFAULT_LOCALE ? localizedHref("en") : undefined}
+>
 	<head>
 		<script is:inline>
-			(function() {
-				// Force light mode
-				document.documentElement.classList.remove('dark');
-				localStorage.setItem('theme', 'light');
+			(() => {
+				const root = document.documentElement;
+				const stored = (() => {
+					try {
+						return localStorage.getItem('theme');
+					} catch {
+						return null;
+					}
+				})();
+				const dark =
+					stored === 'dark' ||
+					(stored !== 'light' &&
+						window.matchMedia('(prefers-color-scheme: dark)').matches);
+				root.classList.toggle('dark', dark);
 			})();
+		</script>
+		<script is:inline>
+			(() => {
+				const enHref = document.documentElement.dataset.enHref;
+				if (!enHref) return;
+				if (
+					location.pathname === '/en' ||
+					location.pathname.startsWith('/en/')
+				)
+					return;
+				let pref = null;
+				try {
+					pref = localStorage.getItem('lang');
+				} catch {
+					pref = null;
+				}
+				const browserEn = (navigator.language || '')
+					.toLowerCase()
+					.startsWith('en');
+				if (pref === 'en' || (!pref && browserEn)) {
+					location.replace(enHref);
+				}
+			})();
+		</script>
+		<script is:inline>
+			document.addEventListener('click', (event) => {
+				const el = event.target.closest
+					? event.target.closest('[data-lang-switch]')
+					: null;
+				if (!el) return;
+				try {
+					localStorage.setItem('lang', el.getAttribute('data-lang-switch'));
+				} catch {
+					/* storage unavailable */
+				}
+			});
 		</script>
 		<title>{pageTitle}</title>
 		<Font cssVariable="--font-mono-var" />
-		<Font cssVariable="--font-serif" />
-		<Font cssVariable="--font-sans-pj" />
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 		<meta name="referrer" content="no-referrer-when-downgrade" />
 		<meta name="description" content={metaDescription} />
 		<meta name="generator" content={Astro.generator} />
-		<meta name="theme-color" content="#39C5BB" />
+		<meta name="theme-color" content="#D4621A" />
 		<meta name="author" content={profileConfig.name} />
-		<meta name="robots" content="index, follow" />
+		<meta name="robots" content={shouldNoindex ? "noindex, nofollow" : "index, follow"} />
 		<link rel="canonical" href={canonicalURL} />
-		<link rel="alternate" hreflang={siteLang} href={canonicalURL} />
-		<link rel="alternate" hreflang="x-default" href={canonicalURL} />
-		<link rel="webmention" href="" />
-		<link rel="pingback" href="" />
-		<link rel="alternate" type="application/rss+xml" title={`${siteConfig.title} - RSS`} href="/rss.xml" />
-		<link rel="alternate" type="application/atom+xml" title={`${siteConfig.title} - Atom`} href="/atom.xml" />
+		{hasLocalizedPair && !isFallback ? (
+			<>
+				<link rel="alternate" hreflang="zh-CN" href={absoluteHref("zh")} />
+				<link rel="alternate" hreflang="en" href={absoluteHref("en")} />
+				<link rel="alternate" hreflang="x-default" href={absoluteHref("zh")} />
+			</>
+		) : isFallback ? null : (
+			<link rel="alternate" hreflang={siteLang} href={canonicalURL} />
+		)}
+		<link rel="alternate" type="application/rss+xml" title={`${siteName} - RSS`} href={locale === "en" ? "/en/rss.xml" : "/rss.xml"} />
+		<link rel="alternate" type="application/atom+xml" title={`${siteName} - Atom`} href={locale === "en" ? "/en/atom.xml" : "/atom.xml"} />
+		<link rel="manifest" href="/manifest.json" />
 		<meta property="og:type" content={ogType} />
 		<meta property="og:url" content={canonicalURL} />
 		<meta property="og:title" content={pageTitle} />
 		<meta property="og:description" content={metaDescription} />
 		<meta property="og:image" content={ogImage} />
 		<meta property="og:site_name" content={siteName} />
+		<meta property="og:locale" content={localeMeta.ogLocale} />
+		{hasLocalizedPair && !isFallback && (
+			<meta property="og:locale:alternate" content={LOCALE_META[switchLocale].ogLocale} />
+		)}
 		{isPostPage && published && <meta property="article:published_time" content={published.toISOString()} />}
 		{isPostPage && updated && <meta property="article:modified_time" content={updated.toISOString()} />}
 		{isPostPage && category && <meta property="article:section" content={category} />}
 		{isPostPage && tags && tags.map(tag => <meta property="article:tag" content={tag} />)}
-		<meta property="twitter:card" content="summary_large_image" />
-		<meta property="twitter:url" content={canonicalURL} />
-		<meta property="twitter:title" content={pageTitle} />
-		<meta property="twitter:description" content={metaDescription} />
-		<meta property="twitter:image" content={ogImage} />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:url" content={canonicalURL} />
+		<meta name="twitter:title" content={pageTitle} />
+		<meta name="twitter:description" content={metaDescription} />
+		<meta name="twitter:image" content={ogImage} />
 		<script type="application/ld+json" set:html={JSON.stringify(jsonLd)}></script>
 		{favicons.map(favicon => (
 			<link rel="icon"
@@ -200,155 +307,202 @@ jsonLd["@graph"].push({
 				  media={favicon.theme && `(prefers-color-scheme: ${favicon.theme})`}
 			/>
 		))}
-		<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-		<link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
-		<link rel="prefetch" as="image" href="" />
-		{/* 预加载关键视觉资源 */}
-		<link rel="preload" href="" as="image" />
+		{(isPostPage || currentPath.startsWith('/about')) && <link rel="preload" href="/images/about-bg.webp" as="image" />}
 		<script>
-            import { PageLifecycle } from "../scripts/page-lifecycle";
-            import { $scrollProgress, $isNavMenuOpen } from "../store/app";
-            // Listen to drawer state and toggle class on body
-            $isNavMenuOpen.subscribe((isOpen) => {
-                if (isOpen) {
-                    document.body.classList.add('drawer-open');
-                } else {
-                    document.body.classList.remove('drawer-open');
-                }
-            });
-            const syncTheme = () => {
-                const theme = localStorage.getItem('theme') || 'auto';
-                if (theme === 'dark' || (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                    document.documentElement.classList.add('dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                }
-            };
-            const updateScrollProgress = () => {
-                const winScroll = window.scrollY;
-                const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-                const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
-                $scrollProgress.set(Math.round(scrolled));
-            };
-            window.addEventListener('scroll', updateScrollProgress, { passive: true });
-            document.addEventListener('astro:page-load', () => {
-                PageLifecycle.onPageLoad();
-                updateScrollProgress();
-                const bar = document.getElementById('nav-progress');
-                if (bar) {
-                    bar.classList.remove('loading', 'finishing');
-                    bar.style.width = '0%';
-                }
-            });
-            document.addEventListener('astro:after-swap', () => {
-                syncTheme();
-                updateScrollProgress();
-                const isHome = window.location.pathname === '/' || /^\/page\/\d+/.test(window.location.pathname);
-                if (isHome) document.body.classList.add('is-home');
-                else document.body.classList.remove('is-home');
-            });
-            document.addEventListener('astro:before-preparation', () => {
-                const bar = document.getElementById('nav-progress');
-                if (bar) bar.classList.add('loading');
-                if (window.artalkInstance) {
-                    try { window.artalkInstance.destroy(); } catch(e) { console.warn("[Artalk] Destroy failed:", e); }
-                    window.artalkInstance = null;
-                }
-            });
-            document.addEventListener('astro:after-preparation', () => {
-                const bar = document.getElementById('nav-progress');
-                if (bar) {
-                    bar.classList.add('finishing');
-                    setTimeout(() => {
-                        bar.classList.remove('loading', 'finishing');
-                        bar.style.width = '0%';
-                    }, 500);
-                }
-            });
-            syncTheme();
-            if (document.readyState === 'complete') {
-                PageLifecycle.init();
-            }
-        </script>
+			import { PageLifecycle } from "../scripts/page-lifecycle";
+			import { animateInMain, restoreContent, showSkeleton } from "../scripts/skeleton";
+			import { setCurrentPath } from "../scripts/nav-state";
+			import { initTheme } from "../scripts/theme";
+			import { $isNavMenuOpen } from "../store/app";
+
+			let drawerScrollY = 0;
+			$isNavMenuOpen.subscribe((isOpen) => {
+				const pw = document.getElementById('push-wrapper');
+				if (isOpen) {
+					drawerScrollY = window.scrollY;
+					document.body.style.top = `-${drawerScrollY}px`;
+					document.body.classList.add('drawer-open');
+					if (pw) pw.style.willChange = 'transform';
+				} else {
+					document.body.classList.remove('drawer-open');
+					document.body.style.top = '';
+					if (pw) {
+						const onEnd = () => { pw.style.willChange = 'auto'; pw.removeEventListener('transitionend', onEnd); };
+						pw.addEventListener('transitionend', onEnd);
+					}
+					window.scrollTo({ top: drawerScrollY, behavior: 'instant' });
+				}
+			});
+
+			let parallaxEls: HTMLElement[] = [];
+			const refreshParallaxEls = () => {
+				parallaxEls = Array.from(document.querySelectorAll<HTMLElement>('[data-parallax]'));
+			};
+			refreshParallaxEls();
+			if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+				let ticking = false;
+				window.addEventListener('scroll', () => {
+					if (!ticking) {
+						requestAnimationFrame(() => {
+							for (const el of parallaxEls) {
+								const rect = el.getBoundingClientRect();
+								if (rect.bottom > 0 && rect.top < window.innerHeight) {
+									const offset = window.scrollY * 0.15;
+									el.style.transform = `translateY(${offset}px)`;
+								}
+							}
+							ticking = false;
+						});
+						ticking = true;
+					}
+				}, { passive: true });
+			}
+
+			const onPageReady = () => {
+				PageLifecycle.onPageLoad();
+			};
+
+			document.addEventListener('swup:visit:start', (event: CustomEvent) => {
+				const detail = event.detail as { visit: { to: { url: string }; history?: { popstate?: boolean } } };
+				setCurrentPath(detail.visit.to.url.split('?')[0].replace(/\/?$/, "/"));
+				showSkeleton(detail.visit.history?.popstate === true);
+			});
+			document.addEventListener('swup:content:replace', () => {
+				document.dispatchEvent(new CustomEvent('astro:after-swap'));
+				refreshParallaxEls();
+				animateInMain();
+			});
+			document.addEventListener('swup:visit:end', () => {
+				requestAnimationFrame(() => onPageReady());
+			});
+			document.addEventListener('swup:visit:abort', () => {
+				restoreContent();
+			});
+
+			initTheme();
+			setCurrentPath(window.location.pathname.replace(/\/?$/, "/"));
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', onPageReady, { once: true });
+			} else {
+				onPageReady();
+			}
+		</script>
         <style define:vars={{
-            'banner-height': `${BANNER_HEIGHT}vh`,
-            'banner-height-total': `${BANNER_HEIGHT + BANNER_HEIGHT_EXTEND}vh`,
-            'page-width': `${PAGE_WIDTH}rem`,
-            'overlap-height': `${MAIN_PANEL_OVERLAPS_BANNER_HEIGHT}rem`,
-        }}></style>
-        <style is:inline>
-        #nav-progress { position: fixed; top: 0; left: 0; width: 0%; height: 2px; background: var(--primary); z-index: 10000; transition: width 0.3s ease, opacity 0.3s ease; pointer-events: none; }
-        #nav-progress.loading { opacity: 1; width: 30%; }
-        #nav-progress.finishing { width: 100%; opacity: 0; }
-        #copy-toast { position: fixed; top: 2rem; left: 50%; transform: translateX(-50%) translateY(-100px); background: var(--card-bg); border: 1px solid var(--primary); color: var(--primary); padding: 0.8rem 1.5rem; border-radius: var(--radius-large); font-size: 0.875rem; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); z-index: 1000; transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); opacity: 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.2rem; pointer-events: none; }
-            #copy-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-            #copy-toast .toast-title { font-weight: 900; font-size: 1rem; letter-spacing: 0.05em; }
-            #copy-toast .toast-sub { font-weight: 500; font-size: 0.75rem; opacity: 0.8; }
-		</style>
+			'banner-height': `${BANNER_HEIGHT}vh`,
+			'banner-height-total': `${BANNER_HEIGHT + BANNER_HEIGHT_EXTEND}vh`,
+			'page-width': `${PAGE_WIDTH}rem`,
+			'overlap-height': `${MAIN_PANEL_OVERLAPS_BANNER_HEIGHT}rem`,
+		}}></style>
+		<noscript>
+			<style is:inline>
+				.scroll-reveal { opacity: 1 !important; filter: none !important; transform: none !important; }
+			</style>
+		</noscript>
 		<slot name="head"></slot>
-		<ClientRouter />
-	        </head>
-	                                <body class:list={[{"is-home": isHomePage, "enable-banner": enableBanner}]} data-author={profileConfig.name} data-site={siteConfig.title}>
-                                            <div id="push-wrapper" class="transition-transform duration-300 ease-in-out">
-                                                <SideDrawer client:idle items={links.map(l => ({ label: l.name, href: l.url }))} activePath={currentPath} siteTitle={siteConfig.title} authorName={profileConfig.name} authorBio={profileConfig.bio} avatarSrc={profileConfig.avatar} />
-                                                <div id="content-main">
-                                                    <div id="copy-toast"><div class="toast-title">{i18n(I18nKey.copyToastTitle)}</div><div class="toast-sub">{i18n(I18nKey.copyToastSub)}</div></div>
-                                                    <ConfigCarrier></ConfigCarrier>
-                                                    <slot />
-                                                    <PostHog />
-                                                    <Footer />
-                                                </div>
-                                            </div>
-	</body></html>
+		</head>
+		<body class:list={[{ "is-home": isHomePage }]}>
+			<MobileNav siteTitle={siteName} locale={locale} switchHref={switchHref} switchLocale={switchLocale} />
+			<div id="push-wrapper">
+				<SideDrawer items={links.map(l => ({ label: l.name, href: l.url }))} siteTitle={siteName} locale={locale} switchHref={switchHref} switchLocale={switchLocale} />
+				<div id="content-wrapper">
+					<main id="content-main" class="transition-slide">
+						<Lightbox></Lightbox>
+						<div class="w-full flex flex-col toc:items-center flex-1">
+							<div class="flex flex-col items-center gap-0 flex-1 w-full max-w-[840px] mx-auto">
+								<div class="w-full pt-14 pb-0">
+									<slot />
+								</div>
+								<div class:list={["w-full", !hideFooter && "mt-auto"]}>
+									{!hideFooter && <Footer />}
+								</div>
+							</div>
+						</div>
+					</main>
+				</div>
+			</div>
+			{featureConfig.analytics === "umami" && <Umami />}
+			{featureConfig.search && <SearchPanel client:idle lang={locale} />}
+		</body>
+	</html>
+
 <style is:global>
-    .aplayer .aplayer-info .aplayer-controller .aplayer-bar-wrap .aplayer-bar .aplayer-played { background: var(--primary) !important; }
-    .aplayer .aplayer-info .aplayer-controller .aplayer-bar-wrap .aplayer-bar .aplayer-played .aplayer-thumb { background: var(--primary) !important; }
-    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
     body {
         overflow-x: hidden;
         background-color: var(--page-bg);
     }
     body.drawer-open {
+        position: fixed;
+        left: 0;
+        right: 0;
+        width: 100%;
         overflow: hidden;
+        overscroll-behavior: none;
+        touch-action: none;
+    }
+    body.drawer-open aside nav {
+        touch-action: pan-y;
+        overscroll-behavior: contain;
+    }
+    body.drawer-open .mobile-nav {
+        opacity: 0;
+        pointer-events: none;
+    }
+    body:not(.drawer-open) .drawer-overlay {
+        opacity: 0;
+        pointer-events: none;
+    }
+    body.drawer-open .drawer-overlay {
+        opacity: 1;
+    }
+    body.drawer-open .mobile-toc-dropdown {
+        opacity: 0;
+        pointer-events: none;
     }
     #push-wrapper {
         display: flex;
         width: calc(100vw + 300px);
         transform: translateX(-300px);
         transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
-        will-change: transform;
         min-height: 100vh;
     }
-    #content-main {
+    #content-wrapper {
         width: 100vw;
         flex-shrink: 0;
         position: relative;
         min-height: 100vh;
-        background-color: var(--page-bg);
-    }
-    /* 修正移动端顶部导航在 transform 容器中的表现 */
-    #push-wrapper nav.fixed {
-        position: absolute !important;
-        left: 300px !important;
-        width: 100vw !important;
-    }
-    body.drawer-open #push-wrapper {
-        transform: translateX(0);
-    }
-</style>
-<style is:inline>
-@media (min-width: 1024px) {
-    #push-wrapper {
-        transform: translateX(0) !important;
-        width: 100vw;
-        transition: none !important;
     }
     #content-main {
-        width: calc(100vw - 300px);
-        flex-shrink: 1;
+        position: relative;
+        min-height: 100vh;
+        background-color: var(--page-bg);
+        display: flex;
+        flex-direction: column;
     }
-    #push-wrapper nav.fixed {
-        display: none !important;
+    body.drawer-open #push-wrapper {
+        will-change: transform;
+        transform: translateX(0);
     }
-}
+    /* Desktop */
+    @media (min-width: 1140px) {
+        #push-wrapper {
+            transform: none !important;
+            width: 100vw;
+            transition: none !important;
+        }
+        #push-wrapper > aside {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+        }
+        #content-wrapper {
+            width: calc(100vw - 300px);
+            margin-left: 300px;
+        }
+        #push-wrapper nav.fixed {
+            display: none !important;
+        }
+    }
 </style>

@@ -1,0 +1,78 @@
+@import url("/fonts/glow-sans/400/index.css");
+@import url("/fonts/glow-sans/500/index.css");
+@import url("/fonts/glow-sans/700/index.css");
+@import url("/fonts/glow-sans/900/index.css");
+
+/* Novecento Sans Wide */
+@font-face {
+  font-family: "Novecento Sans Wide";
+  src: url("/fonts/Novecentosanswide-Light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Novecento Sans Wide";
+  src: url("/fonts/Novecentosanswide-Normal.woff2") format("woff2");
+  font-weight: 400 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Novecento Sans Wide";
+  src: url("/fonts/Novecentosanswide-DemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Futura PT (Cyrillic) */
+@font-face {
+  font-family: "Futura PT";
+  src: url("/fonts/FuturaCyrillicLight.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Futura PT";
+  src: url("/fonts/FuturaCyrillicBook.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Futura PT";
+  src: url("/fonts/FuturaCyrillicMedium.woff2") format("woff2");
+  font-weight: 450 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Futura PT";
+  src: url("/fonts/FuturaCyrillicDemi.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Futura PT";
+  src: url("/fonts/FuturaCyrillicBold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Futura PT";
+  src: url("/fonts/FuturaCyrillicHeavy.woff2") format("woff2");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Futura PT";
+  src: url("/fonts/FuturaCyrillicExtraBold.woff2") format("woff2");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}

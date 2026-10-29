@@ -1,0 +1,29 @@
+---
+import type { Page } from "astro";
+import HomePage from "../../components/pages/HomePage.astro";
+import { PAGE_SIZE } from "../../constants/constants";
+import { getSortedPosts, type SluggedPost } from "../../utils/content-utils";
+
+// Explicit English home page. Without this file Astro's i18n fallback
+// generates `/en/` from the 404 route in some Astro versions.
+// The English index lists translated posts only; untranslated posts stay on
+// the Chinese site instead of leaking into the English reading flow.
+const allPosts = await getSortedPosts("en");
+const totalPages = Math.max(1, Math.ceil(allPosts.length / PAGE_SIZE));
+const page = {
+	data: allPosts.slice(0, PAGE_SIZE),
+	total: allPosts.length,
+	currentPage: 1,
+	lastPage: totalPages,
+	start: 0,
+	end: Math.min(PAGE_SIZE, allPosts.length),
+	size: PAGE_SIZE,
+	url: {
+		current: "/en/",
+		prev: undefined,
+		next: totalPages > 1 ? "/en/2/" : undefined,
+	},
+} as unknown as Page<SluggedPost>;
+---
+
+<HomePage page={page} />

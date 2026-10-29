@@ -1,66 +1,64 @@
 site:
   title: "Lonetrail"
-  subtitle: "Ad Astra Per Aspera"
-  url: "https://lonetrail.vercel.app"
-  lang: "en"
-  author: "Chongxi"
-  email: "qwq@chongxi.us"
+  title_en: "Lonetrail"
+  subtitle: "循此苦旅 直抵群星"
+  subtitle_en: "Ad Astra Per Aspera"
+  description: "一个关于代码、安全与网络的个人笔记本。"
+  description_en: "A personal notebook on code, security and the web."
+  url: "https://lonetrail.pages.dev"
+  lang: "zh_CN"
+  author: "Lonetrail"
+  email: "i@chongxi.us"
   favicon: "/images/favicon.webp"
-  banner: ""
+  banner: "/images/banner.webp"
+  banner_credit: ""
+  banner_credit_url: ""
   og_image: "/images/og.webp"
+  avatar: "/images/avatar.webp"
+  version: "CEPATO_NEXT_v27.0"
 
 profile:
-  avatar: "/images/chongxi-avatar.webp"
-  name: "Chongxi"
-  bio: "Ad Astra Per Aspera"
+  name: "Lonetrail"
+  bio: "循此苦旅 直抵群星"
+  bio_en: "Ad Astra Per Aspera"
   links:
+    - name: "Home"
+      icon: "material-symbols:home-outline"
+      url: "https://chongxi.us"
     - name: "GitHub"
+      icon: "fa6-brands:github"
       url: "https://github.com/ChongxiSama/Lonetrail"
-    - name: "Docs"
-      url: "https://github.com/ChongxiSama/Lonetrail#readme"
-    - name: "主题目录"
-      url: "https://astro.build/themes/"
+    - name: "RSS"
+      icon: "material-symbols:rss-feed"
+      url: "/rss.xml"
+    - name: "Email"
+      icon: "material-symbols:mail-outline-rounded"
+      url: "mailto:i@chongxi.us"
 
 nav:
-  - Home: "/"
-  - Archive: "/archive/"
-  - Series: "/seri/"
-  - Links: "/links/"
-  - About: "/about/"
+  - key: home
+    url: "/"
+  - key: archive
+    url: "/archive/"
+  - key: series
+    url: "/seri/"
+  - key: essays
+    url: "/essays/"
+  - key: about
+    url: "/about/"
 
-features:
-  breadcrumb: true
-  comments: true
-  search: false
-  donate: false
-  rss_feed: true
-  sitemap: true
-  related_posts: true
-  series: true
-  license: true
-
-seo:
-  enable_json_ld: false
-  breadcrumb: true
-  keywords: "astro, theme, blog, lonetrail"
-  same_as: []
-
-services:
-  posthog:
-    api_key: ""
-    api_host: "https://app.posthog.com"
-  webmention:
-    url: ""
-  blogsclub:
-    badge_url: ""
-  issue_tracker:
-    url: ""
-
-trusted_domains:
-  - "lonetrail.vercel.app"
+taxonomy:
+  tags:
+    "技术": "Technology"
+    "随笔": "Essays"
+  categories:
+    "技术": "Technology"
+    "未分类": "Uncategorized"
 
 copyright:
-  text: "Lonetrail Demo"
   site_name: "Lonetrail"
   license: "MIT"
   license_url: "https://opensource.org/licenses/MIT"
+
+trusted_domains:
+  - "lonetrail.pages.dev"

@@ -1,0 +1,255 @@
+/* ========== Twikoo 评论系统样式 ========== */
+
+.twikoo .tk-comments {
+    font-family: var(--font-sans);
+    color: rgb(var(--ce-text-hero));
+}
+
+.twikoo .tk-comment {
+    padding: 1.25rem 0;
+    border-bottom: 1px solid rgb(var(--ce-text-hero) / 0.1);
+}
+
+.twikoo .tk-comment:last-child {
+    border-bottom: none;
+}
+
+.twikoo .tk-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0;
+    border: 1px solid rgb(var(--ce-text-hero) / 0.2);
+}
+
+.twikoo .tk-nick {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: rgb(var(--ce-accent));
+}
+
+.twikoo .tk-tag {
+    display: inline-block;
+    font-size: 0.75rem;
+    padding: 0.1em 0.4em;
+    margin-left: 0.4em;
+    border: 1px solid rgb(var(--ce-accent));
+    color: rgb(var(--ce-accent));
+    background: transparent;
+    border-radius: 0;
+    line-height: 1.3;
+}
+
+.twikoo .tk-time {
+    font-size: 0.75rem;
+    color: rgb(var(--ce-text-hero) / 0.4);
+    font-family: var(--font-mono);
+}
+
+.twikoo .tk-content {
+    font-size: 0.9375rem;
+    line-height: 1.7;
+    color: rgb(var(--ce-text-hero) / 0.85);
+    margin: 0.5rem 0;
+}
+
+.twikoo .tk-content p {
+    margin: 0.5rem 0;
+}
+
+.twikoo .tk-content a {
+    color: rgb(var(--ce-accent));
+    text-decoration: underline;
+    text-decoration-color: rgb(var(--ce-accent) / 0.3);
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+}
+
+.twikoo .tk-content a:hover {
+    color: rgb(var(--ce-accent));
+    text-decoration-color: rgb(var(--ce-accent) / 0.7);
+}
+
+.twikoo .tk-content code {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    padding: 0.15em 0.3em;
+    background: rgb(var(--ce-text-hero) / 0.08);
+    border-bottom: 1px solid rgb(var(--ce-accent) / 0.4);
+    color: inherit;
+}
+
+.twikoo .tk-content pre {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgb(var(--ce-text-hero) / 0.1);
+    padding: 0.75rem 1rem;
+    overflow-x: auto;
+    margin: 0.75rem 0;
+}
+
+.twikoo .tk-content pre code {
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.twikoo .tk-content img {
+    max-width: 100%;
+    border: 1px solid rgb(var(--ce-text-hero) / 0.15);
+    margin: 0.75rem 0;
+}
+
+.twikoo .tk-content blockquote {
+    border-left: 1px solid rgb(var(--ce-text-hero) / 0.2);
+    padding-left: 1rem;
+    margin: 0.75rem 0;
+    color: rgb(var(--ce-text-hero) / 0.65);
+}
+
+.twikoo .tk-actions {
+    margin-top: 0.5rem;
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.twikoo .tk-action-icon {
+    font-size: 0.8125rem;
+    color: rgb(var(--ce-text-hero) / 0.35);
+    cursor: pointer;
+    transition: color 0.15s;
+    user-select: none;
+}
+
+.twikoo .tk-action-icon:hover {
+    color: rgb(var(--ce-accent));
+}
+
+.twikoo .tk-action-icon.liked {
+    color: rgb(var(--ce-accent));
+}
+
+.twikoo .tk-replies {
+    margin-left: 3rem;
+    padding-left: 1rem;
+    border-left: 1px solid rgb(var(--ce-text-hero) / 0.1);
+}
+
+/* ----- 输入区域 ----- */
+
+.twikoo .tk-comment-new {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgb(var(--ce-text-hero) / 0.1);
+}
+
+.twikoo .tk-input {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.twikoo .tk-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.twikoo .tk-row input[type="text"],
+.twikoo .tk-row input[type="email"],
+.twikoo .tk-row input[type="url"] {
+    flex: 1;
+    min-width: 140px;
+    padding: 0.5rem 0.75rem;
+    background: rgb(var(--ce-text-hero) / 0.06);
+    border: 1px solid rgb(var(--ce-text-hero) / 0.15);
+    color: rgb(var(--ce-text-hero));
+    font-size: 0.875rem;
+    font-family: var(--font-sans);
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.twikoo .tk-row input:focus {
+    border-color: rgb(var(--ce-accent));
+}
+
+.twikoo .tk-textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 0.75rem;
+    background: rgb(var(--ce-text-hero) / 0.06);
+    border: 1px solid rgb(var(--ce-text-hero) / 0.15);
+    color: rgb(var(--ce-text-hero));
+    font-size: 0.875rem;
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    outline: none;
+    resize: vertical;
+    transition: border-color 0.15s;
+}
+
+.twikoo .tk-textarea:focus {
+    border-color: rgb(var(--ce-accent));
+}
+
+.twikoo .tk-textarea::placeholder,
+.twikoo .tk-row input::placeholder {
+    color: rgb(var(--ce-text-hero) / 0.25);
+}
+
+.twikoo .tk-submit {
+    align-self: flex-end;
+    padding: 0.5rem 1.5rem;
+    background: transparent;
+    border: none;
+    color: rgb(var(--ce-accent));
+    font-size: 0.8125rem;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: opacity 0.15s;
+}
+
+.twikoo .tk-submit:hover {
+    opacity: 0.7;
+}
+
+.twikoo .tk-submit:active {
+    opacity: 0.5;
+}
+
+/* ----- 预览区域 ----- */
+
+.twikoo .tk-preview {
+    border: 1px solid rgb(var(--ce-text-hero) / 0.15);
+    padding: 1rem;
+    margin: 0.75rem 0;
+    background: rgba(0, 0, 0, 0.15);
+}
+
+/* ----- 空状态/提示文字 ----- */
+
+.twikoo .tk-comments-no {
+    text-align: center;
+    padding: 2rem 0;
+    color: rgb(var(--ce-text-hero) / 0.3);
+    font-size: 0.875rem;
+}
+
+.twikoo .tk-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* ----- 回复输入框 ----- */
+
+.twikoo .tk-comment .tk-comment-new {
+    margin: 1rem 0 0 3rem;
+    padding: 1rem;
+    border: 1px solid rgb(var(--ce-text-hero) / 0.1);
+    background: rgba(0, 0, 0, 0.1);
+}

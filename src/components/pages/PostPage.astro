@@ -1,20 +1,145 @@
 ---
-import type { CollectionEntry } from "astro:content";
-import { getPostUrlBySlug } from "@utils/url-utils";
-import PostCardNew from "../blog/PostCardNew.astro";
+import { render } from "astro:content";
+import { CopyrightCard } from "@components/post/CopyrightCard";
+import RelatedNodes from "@components/post/RelatedNodes.astro";
+import { AuthorCardInline } from "../../components/post/AuthorCardInline";
+import PostHero from "../../components/post/PostHero.astro";
+import SeriesNotice from "../../components/post/SeriesNotice.astro";
+import Twikoo from "../../components/post/Twikoo";
+import ScrollReveal from "../../components/ui/ScrollReveal.astro";
+import { featureConfig, profileConfig } from "../../config";
+import "../../styles/markdown.css";
+import "../../styles/expressive-code.css";
+import I18nKey from "../../i18n/i18nKey";
+import { localizePath, resolveLocale } from "../../i18n/locales";
+import { getSiteSubtitle, getSiteTitle } from "../../i18n/site";
+import { i18n } from "../../i18n/translation";
+import Layout from "../../layouts/Layout.astro";
+import { getRelatedPosts, type SluggedPost } from "../../utils/content-utils";
+import { formatDate } from "../../utils/date-utils";
+import { stripMarkdown, truncate } from "../../utils/strip-markdown";
 
-const { page } = Astro.props;
+interface Props {
+	entry: SluggedPost;
+	posts: SluggedPost[];
+	/** True when this is a real English translation, not an i18n fallback. */
+	translated?: boolean;
+}
+
+const { entry, posts, translated = false } = Astro.props;
+const locale = resolveLocale(Astro.currentLocale, Astro.url.pathname);
+const t = (key: I18nKey) => i18n(key, locale);
+const href = (path: string) => localizePath(path, locale);
+const isFallback = !translated && locale !== "zh";
+const { Content } = await render(entry);
+
+const relatedNodes = await getRelatedPosts(entry, posts, 3);
+const relatedPosts = relatedNodes.map((p) => ({
+	title: p.data.title,
+	href: href(`/posts/${p.slug}`),
+	category: p.data.category || "",
+}));
+
+const currentIndex = posts.findIndex((p) => p.slug === entry.slug);
+const nextPost = currentIndex > 0 ? posts[currentIndex - 1] : null;
+
+const pageTitle = `${entry.data.title} - ${getSiteTitle(locale)}`;
+const fallbackDescription = truncate(stripMarkdown(entry.body ?? ""), 100);
+const metaDescription =
+	entry.data.description?.trim() ||
+	fallbackDescription ||
+	getSiteSubtitle(locale);
 ---
-<div class="flex flex-col gap-4 md:gap-6 mb-8">
-    {page.data.map((entry: CollectionEntry<"posts">, index: number) => (
-        <PostCardNew
-                entry={entry}
-                title={entry.data.title}
-                category={entry.data.category}
-                published={entry.data.published}
-                url={getPostUrlBySlug(entry.slug)}
-                description={entry.data.description}
-                index={index}
-        ></PostCardNew>
-    ))}
-</div>
+
+<Layout
+	title={pageTitle}
+	description={metaDescription}
+	setOGTypeArticle={true}
+	published={entry.data.published}
+	updated={entry.data.updated || entry.data.published}
+	tags={entry.data.tags}
+	category={entry.data.category ?? undefined}
+	wordCount={entry.body ? entry.body.replace(/\s+/g, "").length : 0}
+	translated={translated}
+	>
+		<PostHero
+			title={entry.data.title}
+			slug={entry.slug}
+			published={entry.data.published}
+			tags={entry.data.tags}
+			description={entry.data.description}
+			lang={locale}
+		/>
+
+		<article data-pagefind-body={isFallback ? undefined : true} class="relative w-full max-w-[840px] bg-page paper-texture shadow-2xl px-6 md:px-16 py-10 md:py-16 overflow-hidden min-h-[400px]">
+			<div class="watermark top-40 -left-10 text-[180px]" style="opacity: 0.02; color: currentColor;">ANALYSIS</div>
+
+		<div class="relative z-10 prose custom-md max-w-none prose-img:rounded-sm">
+				<Content />
+			</div>
+
+			<div class="relative z-10 mt-20">
+				<div class="border-b-[2pt] border-primary/15 mb-6"></div>
+				<div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+					<a href={href("/about/")} class="group flex items-center gap-3 shrink-0">
+						<img src={profileConfig.avatar} alt={profileConfig.name} width="40" height="40" class="w-10 h-10 rounded-full object-cover border border-border/40 group-hover:border-accent/40 transition-colors" />
+						<div class="space-y-0.5">
+							<span class="font-heading text-[14px] text-primary font-bold block group-hover:text-accent transition-colors">{profileConfig.name}</span>
+							<span class="font-deco text-[9px] text-secondary uppercase tracking-widest">Author</span>
+						</div>
+					</a>
+					<div class="hidden sm:block w-px h-8 bg-hover/30"></div>
+					<div class="flex flex-col gap-1 min-w-0">
+						<AuthorCardInline client:visible />
+					</div>
+					<div class="hidden sm:block w-px h-8 bg-hover/30"></div>
+					<div class="flex flex-col gap-1 shrink-0">
+						<div class="flex items-center gap-2">
+							<span class="font-deco text-[9px] text-secondary uppercase tracking-widest">{t(I18nKey.publishedAt)}:</span>
+							<span class="font-date text-[11px] text-primary tracking-[0.12em]">{formatDate(entry.data.published).replace(/\//g, ".")}</span>
+						</div>
+					</div>
+					<span class="hidden sm:block ml-auto font-deco text-[10px] text-secondary uppercase tracking-[0.3em] shrink-0">
+						// End of Report
+					</span>
+				</div>
+			</div>
+		</article>
+
+		<SeriesNotice tags={entry.data.tags} category={entry.data.category} lang={locale} />
+
+		<ScrollReveal>
+			<CopyrightCard
+				client:visible
+				title={entry.data.title}
+				published={entry.data.published}
+				tags={entry.data.tags || []}
+				slug={entry.slug}
+				rawBody={entry.body}
+				lang={locale}
+			/>
+		</ScrollReveal>
+
+		<ScrollReveal>
+			<RelatedNodes
+				nodes={relatedPosts}
+				nextPost={nextPost ? {
+					title: nextPost.data.title,
+					href: href(`/posts/${nextPost.slug}`),
+					id: `${nextPost.slug.toUpperCase().slice(0, 8)}`
+				} : undefined}
+			/>
+		</ScrollReveal>
+
+		{featureConfig.comments && (
+		<div class="relative w-full max-w-[840px] bg-hero paper-texture shadow-2xl px-6 md:px-16 py-10 md:py-12 pb-16 md:pb-20">
+			<div class="flex items-center gap-2 mb-3">
+				<div class="w-[3px] h-[10px] bg-accent"></div>
+				<span class="text-[10px] font-deco tracking-[0.25em] font-bold text-on-hero/70 uppercase">Discussion</span>
+				<div class="flex-1 h-px bg-white/10"></div>
+			</div>
+			<Twikoo client:visible lang={locale} />
+		</div>
+		)}
+
+</Layout>

@@ -1,4 +1,6 @@
-import { profileConfig, siteConfig } from "@/config";
+import { profileConfig } from "@/config";
+import { DEFAULT_LOCALE, toLocale } from "@/i18n/locales";
+import { getSiteSubtitle, getSiteTitle } from "@/i18n/site";
 
 interface JsonLdProps {
 	siteUrl: string;
@@ -36,15 +38,20 @@ export function generateJsonLd({
 	entities,
 	citations,
 	currentPath,
-}: JsonLdProps) {
+}: JsonLdProps): Record<string, unknown> {
+	const locale = toLocale(siteLang?.startsWith("en") ? "en" : DEFAULT_LOCALE);
+	const siteTitle = getSiteTitle(locale);
 	let schemaType: string | string[] = "WebPage";
 	if (isHomePage) schemaType = "CollectionPage";
 	if (isPostPage) {
-		schemaType =
-			category === "TECH" ? ["BlogPosting", "TechArticle"] : "BlogPosting";
+		schemaType = "BlogPosting";
+	} else if (currentPath.includes("/essays/")) {
+		schemaType = "CreativeWork";
+	} else if (currentPath.includes("/photos/")) {
+		schemaType = "ImageGallery";
 	} else if (currentPath.includes("/about/")) {
 		schemaType = "AboutPage";
-	} else if (currentPath.includes("/links/")) {
+	} else if (currentPath.includes("/seri/")) {
 		schemaType = "CollectionPage";
 	}
 
@@ -55,35 +62,37 @@ export function generateJsonLd({
 				"@type": Array.isArray(schemaType) ? schemaType : [schemaType],
 				"@id": `${canonicalURL}#main-entity`,
 				url: canonicalURL,
-				name: title || siteConfig.title,
+				name: title || siteTitle,
 				description: metaDescription,
 				isPartOf: { "@id": `${siteUrl}#website` },
-				publisher: { "@id": `${siteUrl}/#person` },
-				author: { "@id": `${siteUrl}/#person` },
+				publisher: { "@id": `${siteUrl}#person` },
+				author: { "@id": `${siteUrl}#person` },
 				inLanguage: siteLang,
 			},
 			{
 				"@type": "WebSite",
 				"@id": `${siteUrl}#website`,
 				url: siteUrl,
-				name: siteConfig.title,
-				description: siteConfig.subtitle,
-				publisher: { "@id": `${siteUrl}/#person` },
+				name: siteTitle,
+				description: getSiteSubtitle(locale),
+				inLanguage: siteLang,
+				publisher: { "@id": `${siteUrl}#person` },
 			},
 			{
 				"@type": "Person",
-				"@id": `${siteUrl}/#person`,
+				"@id": `${siteUrl}#person`,
 				name: profileConfig.name,
-				alternateName: [profileConfig.name],
-				url: siteUrl + "/",
+				url: siteUrl,
 				image: profileConfig.avatar
 					? {
 							"@type": "ImageObject",
-							"@id": siteUrl + "/#person",
+							"@id": `${siteUrl}#personImage`,
 							url: new URL(profileConfig.avatar, siteUrl).toString(),
 						}
 					: undefined,
-				sameAs: profileConfig.links.map(l => l.url) || [],
+				sameAs: profileConfig.links
+					.map((link) => link.url)
+					.filter((url) => url.startsWith("http")),
 			},
 		],
 	};
@@ -92,7 +101,7 @@ export function generateJsonLd({
 
 	if (isPostPage) {
 		const mainEntity = graph[0];
-		mainEntity.headline = title || siteConfig.title;
+		mainEntity.headline = (title || siteTitle).replace(` - ${siteTitle}`, "");
 		mainEntity.datePublished = published?.toISOString();
 		mainEntity.dateModified = (updated || published)?.toISOString();
 		mainEntity.image = ogImage;

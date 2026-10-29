@@ -21,4 +21,3 @@
 
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable
-  Link: </fonts/PlusJakartaSans.woff2>; rel=preload; as=font; type=font/woff2; crossorigin

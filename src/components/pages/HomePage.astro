@@ -1,0 +1,245 @@
+---
+import { getCollection } from "astro:content";
+import ArchiveHeader from "@components/pages/ArchiveHeader.astro";
+import PocketCard from "@components/pages/PocketCard.astro";
+import ActivityHeatmap from "@components/ui/ActivityHeatmap.astro";
+import Pagination from "@components/ui/Pagination.astro";
+import ScrollReveal from "@components/ui/ScrollReveal.astro";
+import type { Page } from "astro";
+import readingTime from "reading-time";
+import { profileConfig } from "../../config";
+import I18nKey from "../../i18n/i18nKey";
+import { localizePath, resolveLocale } from "../../i18n/locales";
+import { getProfileBio, getSiteTitle } from "../../i18n/site";
+import { i18n } from "../../i18n/translation";
+import Layout from "../../layouts/Layout.astro";
+import {
+	getCategoryList,
+	getSortedPosts,
+	getTagList,
+	type SluggedPost,
+} from "../../utils/content-utils";
+import { formatDate } from "../../utils/date-utils";
+import { stripMarkdown, truncate } from "../../utils/strip-markdown";
+import PostCardNew from "../blog/PostCardNew.astro";
+
+interface Props {
+	page: Page<SluggedPost>;
+}
+
+const { page } = Astro.props;
+const locale = resolveLocale(Astro.currentLocale, Astro.url.pathname);
+const t = (key: I18nKey) => i18n(key, locale);
+const href = (path: string) => localizePath(path, locale);
+
+const categories = await getCategoryList(locale);
+const tags = await getTagList(locale);
+const allPosts = await getSortedPosts(locale);
+
+const essays = (await getCollection("essays"))
+	.filter((entry) =>
+		locale === "en"
+			? entry.filePath?.endsWith(".en.md")
+			: !entry.filePath?.endsWith(".en.md"),
+	)
+	.sort((a, b) => b.data.published.getTime() - a.data.published.getTime());
+const essaySlug = (entry: (typeof essays)[number]) =>
+	(entry.filePath?.split("/").pop() ?? entry.id)
+		.replace(/\.en\.md$/, "")
+		.replace(/\.md$/, "");
+const activityItems = [
+	...allPosts.map((entry) => ({
+		date: entry.data.published,
+		title: entry.data.title,
+	})),
+	...essays.map((entry) => ({
+		date: entry.data.published,
+		title: entry.data.title || t(I18nKey.navEssays),
+	})),
+];
+
+const buildSummary = (entry: SluggedPost): string => {
+	const body = entry.body ?? "";
+	return entry.data.description?.trim() || truncate(stripMarkdown(body), 100);
+};
+
+const pinned = allPosts.find((entry) => entry.data.pinned);
+
+const posts = page.data
+	.filter(
+		(entry) =>
+			!(pinned && page.currentPage === 1 && entry.slug === pinned.slug),
+	)
+	.map((entry: SluggedPost) => {
+		const minutes = Math.max(
+			1,
+			Math.round(readingTime(entry.body ?? "").minutes),
+		);
+		return { ...entry, summary: buildSummary(entry), minutes };
+	});
+---
+
+<Layout
+	description={i18n(I18nKey.homeIntro, locale)}
+	title={page.currentPage > 1 ? t(I18nKey.pageLabel).replace("{page}", String(page.currentPage)) : undefined}
+>
+
+		<ArchiveHeader
+			title={getSiteTitle(locale)}
+			count={page.total}
+			variant="dark"
+			compact
+			lang={locale}
+		/>
+
+		<div class="relative w-full max-w-[840px] px-6 md:px-10 pt-4 pb-3">
+			<div class="absolute inset-0 max-w-[840px] mx-auto bg-gradient-to-b from-black/[0.08] to-page pointer-events-none"></div>
+			<div class="relative flex items-center gap-2 mb-3">
+				<div class="w-[3px] h-[10px] bg-accent"></div>
+				<span class="font-deco text-[10px] text-hint uppercase tracking-[0.25em]">
+					{t(I18nKey.blogArchive)}
+				</span>
+				<div class="flex-1 h-px bg-hover/40"></div>
+				<a href={locale === "en" ? "/en/rss.xml" : "/rss.xml"} class="font-deco text-[9px] text-accent hover:text-primary uppercase tracking-[0.2em] transition-colors">
+					RSS
+				</a>
+			</div>
+		</div>
+
+		{pinned && page.currentPage === 1 && (
+			<div class="relative w-full max-w-[840px] px-6 md:px-10 pb-4">
+				<a
+					href={href(`/posts/${pinned.slug}`)}
+					class="group relative block border-l-2 border-accent bg-page paper-texture shadow-2xl px-5 md:px-8 py-6 hover:bg-accent/[0.04] transition-colors highlight-sweep"
+				>
+					<div class="flex flex-wrap items-center gap-x-3 gap-y-1 mb-3">
+						<span class="font-deco text-[10px] text-accent uppercase tracking-[0.25em]">
+							{t(I18nKey.pinned)}
+						</span>
+						<span class="w-1 h-1 rounded-full bg-hover/60"></span>
+						<span class="font-date text-[11px] text-secondary tracking-[0.12em]">
+							{formatDate(pinned.data.published).replace(/\//g, ".")}
+						</span>
+					</div>
+					<h2 class="font-heading text-[24px] md:text-[28px] leading-[1.2] tracking-tight text-primary uppercase font-black group-hover:text-accent transition-colors mb-3">
+						{pinned.data.title}
+					</h2>
+					<p class="font-cn text-[14px] text-hint leading-[1.75] line-clamp-3">
+						{buildSummary(pinned)}
+					</p>
+				</a>
+			</div>
+		)}
+
+		{posts.map((entry, index) => (
+			<ScrollReveal delay={index * 80}>
+				<PostCardNew
+					title={entry.data.title}
+					category={entry.data.category || ""}
+					published={entry.data.published}
+					url={href(`/posts/${entry.slug}`)}
+					description={entry.summary}
+					tags={entry.data.tags}
+					minutes={entry.minutes}
+					index={index + page.start}
+					alt={index % 2 === 1}
+					lang={locale}
+				/>
+			</ScrollReveal>
+		))}
+
+		<ScrollReveal>
+			<Pagination
+				currentPage={page.currentPage}
+				totalPages={page.lastPage}
+				prevHref={page.url.prev ? href(page.url.prev) : undefined}
+				nextHref={page.url.next ? href(page.url.next) : undefined}
+				basePath={href("/")}
+				firstHref={href("/")}
+				lang={locale}
+			/>
+		</ScrollReveal>
+
+		{page.currentPage === 1 && (
+		<div class="relative w-full max-w-[840px] px-6 md:px-10 py-6">
+			<div class="flex items-center gap-3 mb-6">
+				<div class="w-[3px] h-[10px] bg-accent"></div>
+				<span class="font-deco text-[10px] text-hint uppercase tracking-[0.25em]">
+					{t(I18nKey.otherSections)}
+				</span>
+				<div class="flex-1 h-px bg-hover/40"></div>
+			</div>
+
+			{essays.length > 0 && (
+			<div class="mb-7">
+				<div class="flex items-baseline justify-between gap-3 mb-1">
+					<div class="flex items-baseline gap-2">
+						<h3 class="font-heading text-[15px] text-primary uppercase tracking-tight">
+							{t(I18nKey.navEssays)}
+						</h3>
+						<span class="font-deco text-[9px] text-hint uppercase tracking-[0.25em]">
+							{t(I18nKey.stream)}
+						</span>
+					</div>
+					<a href={href("/essays/")} class="font-deco text-[9px] text-accent hover:text-primary uppercase tracking-[0.2em] transition-colors shrink-0">
+						{t(I18nKey.allEssays)} {essays.length} →
+					</a>
+				</div>
+				<p class="font-cn text-[11px] text-hint leading-relaxed mb-3">
+					{t(I18nKey.essaysIntro)}
+				</p>
+				<div class="space-y-3">
+					{essays.slice(0, 2).map((entry) => (
+						<a
+							href={href(`/essays/${essaySlug(entry)}/`)}
+							class="group flex gap-3 border-l border-border/40 pl-3 hover:border-accent transition-colors"
+						>
+							<img
+								src={profileConfig.avatar}
+								alt=""
+								width="28"
+								height="28"
+								loading="lazy"
+								class="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5"
+							/>
+							<div class="min-w-0">
+								<div class="font-deco text-[9px] text-hint uppercase tracking-widest mb-1">
+									{formatDate(entry.data.published).replace(/\//g, ".")}
+								</div>
+								<p class="font-cn text-[13px] text-primary/70 leading-relaxed line-clamp-2 group-hover:text-primary transition-colors">
+									{truncate(stripMarkdown(entry.body ?? ""), 90) || entry.data.title || t(I18nKey.view)}
+								</p>
+							</div>
+						</a>
+					))}
+				</div>
+			</div>
+			)}
+
+		</div>
+		)}
+
+		<div class="relative w-full max-w-[840px] px-6 md:px-10 py-5">
+			<div class="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 font-deco text-[9px] text-hint uppercase tracking-[0.2em]">
+				<span>{page.total} {t(I18nKey.postsLabel)}</span>
+				<span class="w-1 h-1 rounded-full bg-hover/60"></span>
+				<span>{tags.length} {t(I18nKey.tagsLabel)}</span>
+				<span class="w-1 h-1 rounded-full bg-hover/60"></span>
+				<span>{categories.length} {t(I18nKey.categoriesLabel)}</span>
+			</div>
+		</div>
+
+		<ScrollReveal>
+			<ActivityHeatmap items={activityItems} label="Publish Activity" lang={locale} />
+		</ScrollReveal>
+
+		<ScrollReveal>
+			<PocketCard
+				name={profileConfig.name}
+				bio={getProfileBio(locale)}
+				tags={profileConfig.tags}
+				avatarSrc={profileConfig.avatar}
+				links={profileConfig.links}
+			/>
+		</ScrollReveal>
+</Layout>

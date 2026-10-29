@@ -3,9 +3,9 @@ import { h } from "hastscript";
 
 export function pluginCustomCopyButton(): ExpressiveCodePlugin {
 	return {
-		name: "Rhine Lab Copy Button",
+		name: "Lonetrail Copy Button",
 		baseStyles: `
-            .rhine-copy-btn {
+            .lonetrail-copy-btn {
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -19,18 +19,18 @@ export function pluginCustomCopyButton(): ExpressiveCodePlugin {
                 box-sizing: border-box;
                 border-radius: 0;
             }
-            .rhine-copy-btn:hover {
+            .lonetrail-copy-btn:hover {
                 background: #F07522;
                 box-shadow: 0 0 10px rgba(212, 98, 26, 0.4);
             }
-            .rhine-copy-btn:active {
+            .lonetrail-copy-btn:active {
                 transform: scale(0.95);
             }
-            .rhine-copy-text {
+            .lonetrail-copy-text {
                 font-family: var(--font-mono);
                 font-size: 10px;
                 font-weight: 900;
-                color: #EDE6D6;
+                color: rgb(var(--ce-text-hero));
                 text-transform: uppercase;
                 letter-spacing: 0.05em;
             }
@@ -40,11 +40,11 @@ export function pluginCustomCopyButton(): ExpressiveCodePlugin {
 				const copyButton = h(
 					"button",
 					{
-						class: "rhine-copy-btn copy-btn",
+						class: "lonetrail-copy-btn copy-btn",
 						"aria-label": "Copy",
 						style: "position: absolute; top: 0.6rem; right: 1rem; z-index: 30;",
 					},
-					[h("span", { class: "rhine-copy-text" }, "COPY")],
+					[h("span", { class: "lonetrail-copy-text" }, "COPY")],
 				);
 
 				renderData.blockAst.children.push(copyButton);

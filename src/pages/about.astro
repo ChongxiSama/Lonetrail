@@ -1,57 +1,117 @@
 ---
-import { getEntry, render } from "astro:content";
-import Markdown from "../components/post/Markdown.astro";
-import ArchiveHeader from "@components/pages/ArchiveHeader.astro";
-import Comments from "../components/post/Comments.astro";
+import { getCollection, render } from "astro:content";
+import { AuthorCardInline } from "../components/post/AuthorCardInline";
+import PostHero from "../components/post/PostHero.astro";
+import "../styles/markdown.css";
+import "../styles/expressive-code.css";
+import { profileConfig, siteMeta } from "../config";
 import I18nKey from "../i18n/i18nKey";
+import { localizePath, resolveLocale } from "../i18n/locales";
+import { getSiteDescription, getSiteTitle } from "../i18n/site";
 import { i18n } from "../i18n/translation";
 import Layout from "../layouts/Layout.astro";
-import { profileConfig, siteConfig } from "../config";
-import "../styles/cepato.css";
 
-const aboutLonetrail = await getEntry("spec", "about-lonetrail");
+const locale = resolveLocale(Astro.currentLocale, Astro.url.pathname);
+const t = (key: I18nKey) => i18n(key, locale);
 
-interface Section {
-	title: string;
-	Content: Awaited<ReturnType<typeof render>>["Content"];
-}
+const specEntries = await getCollection("spec");
+const aboutEntry =
+	specEntries.find((entry) =>
+		locale === "en"
+			? entry.filePath?.endsWith("about-lonetrail.en.md")
+			: entry.filePath?.endsWith("about-lonetrail.md"),
+	) ??
+	specEntries.find((entry) => entry.filePath?.endsWith("about-lonetrail.md"));
 
-const sections: Section[] = [];
-if (aboutLonetrail) {
-	const { Content } = await render(aboutLonetrail);
-	sections.push({ title: aboutLonetrail.data.title, Content });
-}
+if (!aboutEntry) throw new Error("Missing spec entry: about-lonetrail");
 
-const aboutLabel = i18n(I18nKey.about);
-const pageTitle = `${aboutLabel} - ${siteConfig.title}`;
-const metaDescription = `${profileConfig.name} / ${siteConfig.title} - ${siteConfig.subtitle}`;
+const { Content: AboutContent } = await render(aboutEntry);
+
+const aboutLabel = t(I18nKey.about);
+const pageTitle = `${aboutLabel} - ${getSiteTitle(locale)}`;
+const metaDescription = `${profileConfig.name} / ${getSiteTitle(locale)} - ${getSiteDescription(locale)}`;
+const domain = new URL(siteMeta.url).hostname;
+const info = [
+	{ label: "AUTHOR", value: profileConfig.name },
+	{ label: "EMAIL", value: siteMeta.email },
+	{ label: "LANGUAGE", value: "zh-CN / en-US" },
+	{ label: "DOMAIN", value: domain },
+];
 ---
-<Layout title={pageTitle} description={metaDescription}>
-    <div class="py-12 md:py-16 flex flex-col items-center gap-0 overflow-x-hidden pt-14">
+<Layout
+	title={pageTitle}
+	description={metaDescription}
+	published={aboutEntry.data.published}
+	updated={aboutEntry.data.updated}
+>
+	<PostHero
+		title={aboutLabel}
+		slug="about"
+		published={aboutEntry.data.published}
+		lang={locale}
+	/>
 
-        <ArchiveHeader
-            title={i18n(I18nKey.about)}
-            count={sections.length}
-            variant="dark"
-        />
+	<article
+		data-pagefind-body
+		class="relative w-full max-w-[840px] bg-page paper-texture shadow-2xl px-6 md:px-16 py-10 md:py-16 overflow-hidden min-h-[400px]"
+	>
+		<div
+			class="watermark top-40 -left-10 text-[180px]"
+			style="opacity: 0.02; color: currentColor;"
+		>ABOUT</div>
 
-        {sections.length > 0 ? sections.map(({ title, Content }) => (
-            <div class="relative w-full max-w-[840px] bg-lt-bg paper-texture shadow-2xl px-6 md:px-16 py-12 border-b border-lt-border/30">
-                {title && <h1 class="text-3xl md:text-4xl font-bold font-sans text-lt-ink mb-2">{title}</h1>}
-                <div class="prose custom-md dark:prose-invert max-w-none">
-                    <Markdown>
-                        <Content />
-                    </Markdown>
-                </div>
-            </div>
-        )) : (
-            <div class="relative w-full max-w-[840px] bg-lt-bg paper-texture shadow-2xl px-6 md:px-16 py-12">
-                <h1 class="text-3xl font-bold font-sans text-lt-ink mb-4">{i18n(I18nKey.about)}</h1>
-                <p class="text-lt-muted">Create content in <code>src/content/spec/</code></p>
-            </div>
-        )}
+		<dl
+			class="relative z-10 mb-10 grid grid-cols-2 gap-px border border-border/40 bg-border/40 sm:grid-cols-4"
+		>
+			{info.map((item) => (
+				<div class="bg-page px-4 py-3">
+					<dt class="font-deco text-[9px] uppercase tracking-[0.25em] text-hint">
+						{item.label}
+					</dt>
+					<dd class="mt-1 font-deco text-[12px] text-primary break-all">
+						{item.value}
+					</dd>
+				</div>
+			))}
+		</dl>
 
-        <Comments />
+		<div class="relative z-10 prose custom-md max-w-none prose-img:rounded-sm [&>section:first-child>h2]:mt-0">
+			<AboutContent />
+		</div>
 
-    </div>
+		<div class="relative z-10 mt-20">
+			<div class="border-b-[2pt] border-primary/15 mb-6"></div>
+			<div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+				<a
+					href={localizePath("/about/", locale)}
+					class="group flex items-center gap-3 shrink-0"
+				>
+					<img
+						src={profileConfig.avatar}
+						alt={profileConfig.name}
+						width="40"
+						height="40"
+						class="w-10 h-10 rounded-full object-cover border border-border/40 group-hover:border-accent/40 transition-colors"
+					/>
+					<div class="space-y-0.5">
+						<span
+							class="font-heading text-[14px] text-primary font-bold block group-hover:text-accent transition-colors"
+						>{profileConfig.name}</span>
+						<span
+							class="font-deco text-[9px] text-secondary uppercase tracking-widest"
+						>Author</span>
+					</div>
+				</a>
+				<div class="hidden sm:block w-px h-8 bg-hover/30"></div>
+				<div class="flex flex-col gap-1 min-w-0">
+					<AuthorCardInline client:visible />
+				</div>
+				<span
+					class="hidden sm:block ml-auto font-deco text-[10px] text-secondary uppercase tracking-[0.3em] shrink-0"
+				>
+					// End of Report
+				</span>
+			</div>
+		</div>
+	</article>
 </Layout>

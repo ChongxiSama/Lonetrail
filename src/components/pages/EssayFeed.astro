@@ -1,0 +1,131 @@
+---
+import { SITE_ORIGIN } from "@constants/site";
+import { profileConfig } from "../../config";
+import I18nKey from "../../i18n/i18nKey";
+import { DEFAULT_LOCALE, type Locale, localizePath } from "../../i18n/locales";
+import { i18n } from "../../i18n/translation";
+import { formatDate } from "../../utils/date-utils";
+import type { EssayItem } from "../../utils/essay-utils";
+
+interface Props {
+	items: EssayItem[];
+	lang?: Locale;
+}
+
+const { items, lang = DEFAULT_LOCALE } = Astro.props;
+const t = (key: I18nKey) => i18n(key, lang);
+
+const monthFormatter = new Intl.DateTimeFormat(
+	lang === "en" ? "en-US" : "zh-CN",
+	{ month: "long" },
+);
+const monthNames = Array.from({ length: 12 }, (_, index) =>
+	monthFormatter.format(new Date(2020, index, 1)),
+);
+const essayHref = (slug: string) => localizePath(`/essays/${slug}/`, lang);
+---
+
+<div class="relative w-full max-w-[840px] bg-page paper-texture shadow-2xl px-6 md:px-16 py-10">
+	{items.map((item, i) => {
+		const date = formatDate(item.published);
+		const key = date.slice(0, 7);
+		const prevKey = i > 0 ? formatDate(items[i - 1].published).slice(0, 7) : null;
+		const [, month, day] = date.split("/");
+		const text = item.preview || item.title || "";
+		const hasImage = Boolean(item.image);
+		const isShort = !hasImage && text.length <= 40;
+
+		return (
+		<Fragment>
+		{key !== prevKey && (
+			<div class="sticky top-14 z-20 -mx-6 bg-page px-6 pb-2 pt-4 md:-mx-16 md:top-0 md:px-16">
+				<div class="flex items-center gap-3">
+					<span class="font-date text-[11px] tracking-[0.15em] text-accent">
+						{date.slice(0, 4)}
+					</span>
+					<span class="font-heading text-[13px] font-bold uppercase tracking-tight text-primary">
+						{monthNames[Number(month) - 1]}
+					</span>
+					<div class="flex-1 h-px bg-hover/30" />
+				</div>
+			</div>
+		)}
+		<article class="group border-b border-border/10 transition-colors hover:bg-card/20">
+			<a href={essayHref(item.slug)} class="flex gap-3 py-4">
+				<div class="relative h-10 w-10 shrink-0 border border-border/40 bg-card p-0.5">
+					<span class="absolute -top-[2px] -left-[2px] h-1.5 w-1.5 border-l border-t border-accent"></span>
+					<span class="absolute -bottom-[2px] -right-[2px] h-1.5 w-1.5 border-b border-r border-accent"></span>
+					<img
+						src={profileConfig.avatar}
+						alt=""
+						width="40"
+						height="40"
+						loading="lazy"
+						decoding="async"
+						class="h-full w-full object-cover"
+					/>
+				</div>
+
+				<div class="min-w-0 flex-1">
+					<div class="mb-1.5 flex items-baseline gap-2">
+						<span class="font-heading text-[13px] font-bold uppercase tracking-tight text-primary transition-colors group-hover:text-accent">
+							{profileConfig.name}
+						</span>
+						<span class="ml-auto shrink-0 font-date text-[10px] tracking-[0.08em] text-secondary">
+							{month}.{day}
+						</span>
+					</div>
+
+					{hasImage ? (
+						<>
+							<img
+								src={item.image}
+								alt=""
+								width={item.imageWidth}
+								height={item.imageHeight}
+								class="mx-auto mb-3 h-auto max-h-[45vh] w-auto max-w-full border border-border/20"
+								loading="lazy"
+								decoding="async"
+							/>
+							{text && (
+								<p class="font-cn text-[14px] leading-relaxed text-primary/90 break-words line-clamp-2">
+									<Fragment set:html={item.previewHtml} />
+								</p>
+							)}
+						</>
+					) : isShort ? (
+						<p class="font-cn text-[18px] leading-relaxed text-primary break-words">
+							<Fragment set:html={item.previewHtml} />
+						</p>
+					) : (
+						<p class="font-cn text-[15px] leading-relaxed text-primary break-words line-clamp-3">
+							<Fragment set:html={item.previewHtml} />
+						</p>
+					)}
+				</div>
+			</a>
+
+			<div class="flex items-center gap-5 pb-3 pl-[52px]">
+				<a
+					href={`${essayHref(item.slug)}#comments`}
+					aria-label={t(I18nKey.commentsAria)}
+					class="flex h-7 w-7 items-center justify-center text-secondary transition-colors hover:text-accent"
+				>
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.923 1.785A5.969 5.969 0 0 0 6 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337Z"/></svg>
+				</a>
+				<button
+					class="share-btn flex h-7 w-7 items-center justify-center text-secondary transition-colors hover:text-accent"
+					aria-label={t(I18nKey.share)}
+					data-url={`${SITE_ORIGIN}${essayHref(item.slug)}`}
+				>
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z"/></svg>
+				</button>
+				<span class="ml-auto font-deco text-[9px] uppercase tracking-[0.2em] text-hint transition-colors group-hover:text-accent">
+					{t(I18nKey.view)} →
+				</span>
+			</div>
+		</article>
+		</Fragment>
+		);
+	})}
+</div>

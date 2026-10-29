@@ -1,37 +1,30 @@
 ---
 import ArchiveHeader from "@components/pages/ArchiveHeader.astro";
-import ArchivePanel from "@components/pages/ArchivePanel";
-import { siteConfig } from "../config";
+import ArchivePanel from "@components/pages/ArchivePanel.astro";
 import I18nKey from "../i18n/i18nKey";
+import { resolveLocale } from "../i18n/locales";
+import { getSiteTitle } from "../i18n/site";
 import { i18n } from "../i18n/translation";
-// SideDrawer import removed.
 import Layout from "../layouts/Layout.astro";
 import { getSortedPosts } from "../utils/content-utils";
-import "../styles/cepato.css";
 
+const locale = resolveLocale(Astro.currentLocale, Astro.url.pathname);
+const t = (key: I18nKey) => i18n(key, locale);
 const sortedPosts = await getSortedPosts();
 
-const navItems = [
-	{ label: "Home", href: "/" },
-	{ label: "Archive", href: "/archive" },
-	{ label: "Friends", href: "/links" },
-	{ label: "About", href: "/about" },
-];
-
-const archiveLabel = i18n(I18nKey.archive);
-const pageTitle = `${archiveLabel} - ${siteConfig.title}`;
-const metaDescription = `${siteConfig.title} ${archiveLabel} - ${sortedPosts.length} records`;
+const archiveLabel = t(I18nKey.archive);
+const pageTitle = `${archiveLabel} - ${getSiteTitle(locale)}`;
+const metaDescription = `${getSiteTitle(locale)} ${archiveLabel} - ${sortedPosts.length} records`;
 ---
 
 <Layout title={pageTitle} description={metaDescription}>
-	<div class="py-12 md:py-16 flex flex-col items-center gap-0 overflow-x-hidden pt-14">
 
 		<ArchiveHeader
-			title={i18n(I18nKey.archive)}
+			title={archiveLabel}
 			count={sortedPosts.length}
 			variant="dark"
+			lang={locale}
 		/>
 
-		<ArchivePanel client:load sortedPosts={sortedPosts} />
-	</div>
+		<ArchivePanel sortedPosts={sortedPosts} lang={locale} />
 </Layout>

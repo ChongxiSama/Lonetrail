@@ -1,13 +1,15 @@
 import { visit } from "unist-util-visit";
-export function rehypeExternalLinks() {
-	const siteDomains = ["your-site.com"];
+
+export function rehypeExternalLinks(options = {}) {
+	const domains = options.domains ?? [];
+	const isInternal = (hostname) =>
+		domains.some(
+			(domain) => hostname === domain || hostname.endsWith(`.${domain}`),
+		);
 	const isExternalUrl = (href) => {
 		try {
 			const url = new URL(href);
-			return !siteDomains.some((domain) => {
-				const hostname = url.hostname;
-				return hostname === domain || hostname.endsWith(`.${domain}`);
-			});
+			return !isInternal(url.hostname);
 		} catch {
 			return false;
 		}

@@ -1,0 +1,371 @@
+---
+import I18nKey from "../../i18n/i18nKey";
+import { DEFAULT_LOCALE, type Locale } from "../../i18n/locales";
+import { getCategoryLabel, getTagLabel } from "../../i18n/taxonomy";
+import { i18n } from "../../i18n/translation";
+import { formatDate } from "../../utils/date-utils";
+import ActivityHeatmap from "../ui/ActivityHeatmap.astro";
+import PostList, { type YearGroup } from "./PostList.astro";
+
+interface Post {
+	slug: string;
+	data: {
+		title: string;
+		tags: string[];
+		category?: string | null;
+		published: Date;
+	};
+}
+
+interface Props {
+	sortedPosts: Post[];
+	lang?: Locale;
+}
+
+const { sortedPosts, lang = DEFAULT_LOCALE } = Astro.props;
+const t = (key: I18nKey) => i18n(key, lang);
+const uncategorized = t(I18nKey.uncategorized);
+
+// Compute all categories / tags
+const allCategories = (() => {
+	let hasUncategorized = false;
+	const unique = new Set<string>();
+	for (const p of sortedPosts) {
+		if (p.data.category) unique.add(p.data.category);
+		else hasUncategorized = true;
+	}
+	const sorted = Array.from(unique).sort();
+	const items = sorted.map((category) => ({
+		value: category,
+		label: getCategoryLabel(category, lang),
+	}));
+	return hasUncategorized
+		? [{ value: uncategorized, label: uncategorized }, ...items]
+		: items;
+})();
+
+// `value` is the canonical tag used by links and filters; `label` is only
+// what the reader sees.
+const allTags = Array.from(
+	new Set(sortedPosts.flatMap((p) => p.data.tags || [])),
+)
+	.sort()
+	.map((tag) => ({ value: tag, label: getTagLabel(tag, lang) }));
+
+// Group ALL posts by year (no client-side filtering at build time)
+const groupedPosts: YearGroup[] = (() => {
+	const grouped: Record<number, Post[]> = {};
+	for (const post of sortedPosts) {
+		const year = Number(formatDate(post.data.published).slice(0, 4));
+		if (!grouped[year]) grouped[year] = [];
+		grouped[year].push(post);
+	}
+	return Object.keys(grouped)
+		.map((year) => ({
+			year: Number.parseInt(year, 10),
+			posts: grouped[Number.parseInt(year, 10)],
+		}))
+		.sort((a, b) => b.year - a.year);
+})();
+
+const yearStats = [...groupedPosts]
+	.sort((a, b) => a.year - b.year)
+	.map((group) => ({ year: group.year, count: group.posts.length }));
+
+const yearSpan =
+	yearStats.length > 1
+		? `${yearStats[0].year} — ${yearStats[yearStats.length - 1].year}`
+		: String(yearStats[0]?.year ?? "");
+
+const heatItems = sortedPosts.map((post) => ({
+	date: post.data.published,
+	title: post.data.title,
+}));
+
+const dimensionBase =
+	"archive-filter-btn pb-1.5 font-deco text-[11px] uppercase tracking-widest border-b-2 transition-all duration-150 cursor-pointer";
+const chipBase =
+	"archive-chip-btn pb-1 font-deco text-[10px] uppercase tracking-widest border-b-2 transition-all duration-150 cursor-pointer";
+const activeClasses = "text-primary border-b-accent";
+const dimensionIdleClasses =
+	"text-secondary border-b-transparent hover:text-primary";
+const chipIdleClasses =
+	"text-secondary border-b-transparent hover:text-primary";
+---
+
+<div
+	id="archive-panel"
+	class="relative w-full max-w-[840px] bg-page paper-texture shadow-2xl px-6 md:px-16 py-10 overflow-hidden flex flex-col gap-8 transition-all duration-500"
+	data-uncategorized={uncategorized}
+	data-dimension-active={activeClasses}
+	data-dimension-idle={dimensionIdleClasses}
+	data-chip-idle={chipIdleClasses}
+>
+	<div class="absolute -top-1 -left-1 w-3 h-3 border-t border-l border-primary z-20"></div>
+	<div class="absolute -top-1 -right-1 w-3 h-3 border-t border-r border-primary z-20"></div>
+	<div class="absolute -bottom-1 -left-1 w-3 h-3 border-b border-l border-primary z-20"></div>
+	<div class="absolute -bottom-1 -right-1 w-3 h-3 border-b border-r border-primary z-20"></div>
+	<div class="relative z-10 flex flex-col gap-6">
+		<div class="flex flex-col gap-4">
+			<div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 font-deco text-[9px] text-hint uppercase tracking-[0.2em]">
+				<span>{sortedPosts.length} Posts</span>
+				<span class="w-1 h-1 rounded-full bg-hover/60"></span>
+				<span>{yearSpan}</span>
+				<span class="w-1 h-1 rounded-full bg-hover/60"></span>
+				<span>{allCategories.length} Categories</span>
+				<span class="w-1 h-1 rounded-full bg-hover/60"></span>
+				<span>{allTags.length} Tags</span>
+			</div>
+			<ActivityHeatmap items={heatItems} label="Publish Activity" embedded lang={lang} />
+		</div>
+
+		<!-- Dimension filter buttons -->
+		<div class="flex gap-7 w-fit border-b border-border/20">
+			<button
+				type="button"
+				data-dimension="none"
+				aria-pressed="true"
+				class:list={[dimensionBase, activeClasses]}
+			>
+				{t(I18nKey.home)}
+			</button>
+			<button
+				type="button"
+				data-dimension="category"
+				aria-pressed="false"
+				class:list={[dimensionBase, dimensionIdleClasses]}
+			>
+				{t(I18nKey.categories)}
+			</button>
+			<button
+				type="button"
+				data-dimension="tag"
+				aria-pressed="false"
+				class:list={[dimensionBase, dimensionIdleClasses]}
+			>
+				{t(I18nKey.tags)}
+			</button>
+		</div>
+
+		<!-- Chip buttons -->
+		<div
+			id="filter-chips"
+			class="transition-all duration-500 overflow-hidden flex flex-col gap-2 max-h-0 opacity-0 pointer-events-none"
+		>
+			<div data-chip-set="category" class="hidden flex-wrap gap-2">
+				{allCategories.map((item) => (
+					<button
+						type="button"
+						data-filter-type="category"
+						data-value={item.value}
+						aria-pressed="false"
+						class:list={[chipBase, chipIdleClasses]}
+					>
+						{item.label}
+					</button>
+				))}
+			</div>
+			<div data-chip-set="tag" class="hidden flex-wrap gap-2">
+				{allTags.map((item) => (
+					<button
+						type="button"
+						data-filter-type="tag"
+						data-value={item.value}
+						aria-pressed="false"
+						class:list={[chipBase, chipIdleClasses]}
+					>
+						# {item.label}
+					</button>
+				))}
+			</div>
+		</div>
+	</div>
+
+	<PostList
+		groupedPosts={groupedPosts}
+		showDataAttributes={true}
+		emptyMessage={t(I18nKey.noEntries)}
+		lang={lang}
+	/>
+</div>
+
+<script>
+	const initArchive = () => {
+		const panel = document.getElementById("archive-panel");
+		if (!panel) return;
+
+		const postLinks = Array.from(
+			panel.querySelectorAll<HTMLElement>(".archive-post-link"),
+		);
+		const yearGroups = Array.from(
+			panel.querySelectorAll<HTMLElement>(".archive-year-group"),
+		);
+		const emptyState = panel.querySelector<HTMLElement>(".archive-empty-state");
+		const chipsContainer = panel.querySelector<HTMLElement>("#filter-chips");
+		const dimensionButtons = Array.from(
+			panel.querySelectorAll<HTMLElement>("[data-dimension]"),
+		);
+		const chipSets = Array.from(
+			panel.querySelectorAll<HTMLElement>("[data-chip-set]"),
+		);
+		const chipButtons = Array.from(
+			panel.querySelectorAll<HTMLElement>("[data-filter-type]"),
+		);
+
+		const uncatLabel =
+			panel.getAttribute("data-uncategorized") || "Uncategorized";
+		const activeClasses = (panel.getAttribute("data-dimension-active") || "")
+			.split(" ")
+			.filter(Boolean);
+		const dimensionIdleClasses = (
+			panel.getAttribute("data-dimension-idle") || ""
+		)
+			.split(" ")
+			.filter(Boolean);
+		const chipIdleClasses = (panel.getAttribute("data-chip-idle") || "")
+			.split(" ")
+			.filter(Boolean);
+
+		type Dimension = "none" | "category" | "tag";
+		let dimension: Dimension = "none";
+		let filter: string | null = null;
+
+		const toggleClasses = (
+			el: HTMLElement,
+			active: boolean,
+			idleClasses: string[],
+		) => {
+			for (const cls of activeClasses) el.classList.toggle(cls, active);
+			for (const cls of idleClasses) el.classList.toggle(cls, !active);
+		};
+
+		const readUrl = () => {
+			const params = new URLSearchParams(window.location.search);
+			if (params.has("tag")) {
+				dimension = "tag";
+				filter = params.get("tag") || null;
+			} else if (params.has("uncategorized")) {
+				dimension = "category";
+				filter = uncatLabel;
+			} else if (params.has("category")) {
+				dimension = "category";
+				filter = params.get("category") || null;
+			} else {
+				dimension = "none";
+				filter = null;
+			}
+		};
+
+		const apply = () => {
+			for (const link of postLinks) {
+				const postCat = link.getAttribute("data-category") || "";
+				const postTags = (link.getAttribute("data-tags") || "")
+					.split(",")
+					.filter(Boolean);
+				let visible = true;
+				if (dimension === "category" && filter) {
+					visible =
+						filter === uncatLabel ? postCat === "" : postCat === filter;
+				} else if (dimension === "tag" && filter) {
+					visible = postTags.includes(filter);
+				}
+				link.style.display = visible ? "" : "none";
+			}
+
+			for (const group of yearGroups) {
+				const visible = Array.from(
+					group.querySelectorAll<HTMLElement>(".archive-post-link"),
+				).some((link) => link.style.display !== "none");
+				group.style.display = visible ? "" : "none";
+			}
+
+			if (emptyState) {
+				const anyVisible = postLinks.some(
+					(link) => link.style.display !== "none",
+				);
+				emptyState.style.display = anyVisible ? "none" : "";
+			}
+
+			for (const button of dimensionButtons) {
+				const active = button.dataset.dimension === dimension;
+				toggleClasses(button, active, dimensionIdleClasses);
+				button.setAttribute("aria-pressed", String(active));
+			}
+
+			if (chipsContainer) {
+				const open = dimension !== "none";
+				chipsContainer.classList.toggle("max-h-0", !open);
+				chipsContainer.classList.toggle("max-h-[300px]", open);
+				chipsContainer.classList.toggle("opacity-0", !open);
+				chipsContainer.classList.toggle("opacity-100", open);
+				chipsContainer.classList.toggle("pointer-events-none", !open);
+			}
+
+			for (const set of chipSets) {
+				const show = set.dataset.chipSet === dimension;
+				set.classList.toggle("hidden", !show);
+				set.classList.toggle("flex", show);
+			}
+
+			for (const chip of chipButtons) {
+				const active =
+					dimension === chip.dataset.filterType &&
+					filter === chip.dataset.value;
+				toggleClasses(chip, active, chipIdleClasses);
+				chip.setAttribute("aria-pressed", String(active));
+			}
+		};
+
+		const syncUrl = () => {
+			const params = new URLSearchParams();
+			if (dimension === "category") {
+				if (filter === uncatLabel) params.set("uncategorized", "1");
+				else params.set("category", filter || "");
+			} else if (dimension === "tag") {
+				params.set("tag", filter || "");
+			}
+			const url = new URL(window.location.href);
+			const query = params.toString();
+			url.search = query ? `?${query}` : "";
+			if (url.href !== window.location.href) {
+				window.history.replaceState(window.history.state, "", url.href);
+			}
+		};
+
+		panel.addEventListener("click", (event) => {
+			const target = (event.target as HTMLElement | null)?.closest<HTMLElement>(
+				"[data-dimension],[data-filter-type]",
+			);
+			if (!target || !panel.contains(target)) return;
+
+			const nextDimension = target.dataset.dimension as
+				| Dimension
+				| undefined;
+			if (nextDimension) {
+				dimension = dimension === nextDimension ? "none" : nextDimension;
+				filter = null;
+			} else {
+				const type = target.dataset.filterType as "category" | "tag";
+				const value = target.dataset.value || "";
+				if (dimension === type && filter === value) {
+					filter = null;
+				} else {
+					dimension = type;
+					filter = value;
+				}
+			}
+
+			apply();
+			syncUrl();
+		});
+
+		readUrl();
+		apply();
+	};
+
+	if (!document.documentElement.dataset.archiveNavBound) {
+		document.documentElement.dataset.archiveNavBound = "1";
+		document.addEventListener("swup:visit:end", initArchive);
+	}
+	initArchive();
+</script>

@@ -1,0 +1,26 @@
+---
+import ArchiveHeader from "@components/pages/ArchiveHeader.astro";
+import ArchivePanel from "@components/pages/ArchivePanel.astro";
+import I18nKey from "@i18n/i18nKey";
+import { getSiteTitle } from "@i18n/site";
+import { i18n } from "@i18n/translation";
+import Layout from "@layouts/Layout.astro";
+import { getSortedPosts } from "@utils/content-utils";
+
+const locale = "en" as const;
+const sortedPosts = await getSortedPosts(locale);
+const archiveLabel = i18n(I18nKey.archive, locale);
+const pageTitle = `${archiveLabel} - ${getSiteTitle(locale)}`;
+const metaDescription = `${getSiteTitle(locale)} ${archiveLabel} - ${sortedPosts.length} records`;
+---
+
+<Layout title={pageTitle} description={metaDescription}>
+	<ArchiveHeader
+		title={archiveLabel}
+		count={sortedPosts.length}
+		variant="dark"
+		lang={locale}
+	/>
+
+	<ArchivePanel sortedPosts={sortedPosts} lang={locale} />
+</Layout>

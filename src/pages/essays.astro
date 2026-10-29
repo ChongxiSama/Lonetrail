@@ -1,0 +1,75 @@
+---
+import ArchiveHeader from "@components/pages/ArchiveHeader.astro";
+import EssayFeed from "@components/pages/EssayFeed.astro";
+import ActivityHeatmap from "@components/ui/ActivityHeatmap.astro";
+import Pagination from "@components/ui/Pagination.astro";
+import ScrollReveal from "@components/ui/ScrollReveal.astro";
+import { ESSAYS_PAGE_SIZE } from "../constants/constants";
+import I18nKey from "../i18n/i18nKey";
+import { localizePath, resolveLocale } from "../i18n/locales";
+import { getSiteTitle } from "../i18n/site";
+import { i18n } from "../i18n/translation";
+import Layout from "../layouts/Layout.astro";
+import { getEssayItems } from "../utils/essay-utils";
+
+const locale = resolveLocale(Astro.currentLocale, Astro.url.pathname);
+const t = (key: I18nKey) => i18n(key, locale);
+const items = await getEssayItems(locale);
+const heatItems = items.map((item) => ({
+	date: item.published,
+	title: item.title || item.preview,
+}));
+const totalPages = Math.ceil(items.length / ESSAYS_PAGE_SIZE);
+const pageItems = items.slice(0, ESSAYS_PAGE_SIZE);
+const essaysLabel = t(I18nKey.essays);
+const pageHref = localizePath("/essays/page/", locale);
+const firstHref = localizePath("/essays/", locale);
+---
+
+<Layout title={`${essaysLabel} - ${getSiteTitle(locale)}`} description={`${getSiteTitle(locale)} - ${essaysLabel}`}>
+
+		<ArchiveHeader
+			title={essaysLabel}
+			count={items.length}
+			variant="dark"
+			lang={locale}
+		/>
+
+		<ScrollReveal>
+			<ActivityHeatmap items={heatItems} label={t(I18nKey.stream)} lang={locale} />
+		</ScrollReveal>
+
+		<div class="relative w-full max-w-[840px] px-6 md:px-10 pt-4 pb-3">
+			<div class="flex items-center gap-3 mb-2">
+				<div class="w-[3px] h-[10px] bg-accent"></div>
+				<span class="font-deco text-[10px] text-hint uppercase tracking-[0.25em]">
+					Stream
+				</span>
+				<div class="flex-1 h-px bg-hover/40"></div>
+				<span class="font-date text-[10px] text-hint">{t(I18nKey.heatmapCount).replace("{count}", String(items.length))}</span>
+			</div>
+			<p class="font-cn text-[12px] text-primary/50 leading-relaxed">
+				{t(I18nKey.essaysIntro)}
+			</p>
+		</div>
+
+		<EssayFeed items={pageItems} lang={locale} />
+
+		{totalPages > 1 && (
+			<div class="mt-8 flex w-full justify-center">
+				<Pagination
+					currentPage={1}
+					totalPages={totalPages}
+					nextHref={localizePath("/essays/page/2/", locale)}
+					basePath={pageHref}
+					firstHref={firstHref}
+					lang={locale}
+				/>
+			</div>
+		)}
+
+</Layout>
+
+<script>
+	import "../scripts/share-btn.ts";
+</script>

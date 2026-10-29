@@ -1,0 +1,259 @@
+---
+import I18nKey from "../../i18n/i18nKey";
+import { DEFAULT_LOCALE, type Locale } from "../../i18n/locales";
+import { i18n } from "../../i18n/translation";
+
+interface HeatItem {
+	date: Date;
+	title: string;
+}
+
+interface Props {
+	items: HeatItem[];
+	weeks?: number;
+	label?: string;
+	embedded?: boolean;
+	lang?: Locale;
+}
+
+const {
+	items,
+	weeks = 53,
+	label = "Activity",
+	embedded = false,
+	lang = DEFAULT_LOCALE,
+} = Astro.props;
+const t = (key: I18nKey) => i18n(key, lang);
+
+const dayKey = (date: Date) =>
+	`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+const byDay = new Map<string, string[]>();
+for (const item of items) {
+	const key = dayKey(item.date);
+	const list = byDay.get(key);
+	if (list) list.push(item.title);
+	else byDay.set(key, [item.title]);
+}
+
+const today = new Date();
+const start = new Date(today);
+start.setDate(start.getDate() - (weeks * 7 - 1));
+start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+
+const grid: Array<Array<{ key: string; titles: string[]; future: boolean }>> =
+	[];
+const cursor = new Date(start);
+for (let column = 0; column <= weeks; column++) {
+	const days: Array<{ key: string; titles: string[]; future: boolean }> = [];
+	for (let row = 0; row < 7; row++) {
+		const key = dayKey(cursor);
+		days.push({
+			key,
+			titles: byDay.get(key) ?? [],
+			future: cursor > today,
+		});
+		cursor.setDate(cursor.getDate() + 1);
+	}
+	grid.push(days);
+}
+
+const total = items.length;
+const monthLabel = (date: Date) =>
+	`${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}`;
+const startLabel = monthLabel(start);
+const endLabel = monthLabel(today);
+
+const levelStyle = (count: number) => {
+	if (count === 0) return "background: rgba(var(--ce-border) / 0.22)";
+	if (count === 1) return "background: rgba(var(--ce-accent) / 0.35)";
+	if (count === 2) return "background: rgba(var(--ce-accent) / 0.6)";
+	return "background: rgba(var(--ce-accent) / 0.95)";
+};
+---
+
+<div
+	class:list={["w-full", embedded ? "" : "max-w-[840px] px-6 md:px-10 py-6"]}
+	data-heatmap
+	data-empty-label={t(I18nKey.heatmapNone)}
+	data-more-label={lang === "en" ? "…and {count} more" : "…还有 {count} 条"}
+>
+	<div class="flex items-center gap-3 mb-3">
+		<div class="w-[3px] h-[10px] bg-accent"></div>
+		<span class="font-deco text-[10px] text-hint uppercase tracking-[0.25em]">
+			{label}
+		</span>
+		<div class="flex-1 h-px bg-hover/40"></div>
+		{!embedded && (
+			<span class="font-date text-[10px] text-hint">{t(I18nKey.heatmapCount).replace("{count}", String(total))}</span>
+		)}
+	</div>
+
+	<div class="flex gap-[1px] overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+		{grid.map((column) => (
+			<div class="flex flex-col gap-[1px] shrink-0">
+				{column.map((day) => (
+					<div
+						class:list={[
+							"heat-cell w-[7px] h-[7px] rounded-[1px]",
+							day.future && "invisible",
+							day.titles.length > 0 && "cursor-pointer",
+						]}
+						style={levelStyle(day.titles.length)}
+						data-heat={day.key}
+						data-heat-items={day.titles.join("\n")}
+					/>
+				))}
+			</div>
+		))}
+	</div>
+
+	<div class="flex items-center justify-between mt-2 pt-2 border-t border-border/20">
+		<span class="font-date text-[9px] text-hint tracking-[0.1em]">
+			{startLabel} — {endLabel}
+		</span>
+		<div class="flex items-center gap-1">
+			<span class="font-deco text-[8px] text-hint uppercase tracking-widest">{t(I18nKey.heatmapLess)}</span>
+			{["rgba(var(--ce-border) / 0.22)", "rgba(var(--ce-accent) / 0.35)", "rgba(var(--ce-accent) / 0.6)", "rgba(var(--ce-accent) / 0.95)"].map((bg) => (
+				<div class="w-[7px] h-[7px] rounded-[1px]" style={`background: ${bg}`} />
+			))}
+			<span class="font-deco text-[8px] text-hint uppercase tracking-widest">{t(I18nKey.heatmapMore)}</span>
+		</div>
+	</div>
+</div>
+
+<style is:global>
+	.heat-cell {
+		transition: outline-color 120ms ease, transform 120ms ease;
+		outline: 1px solid transparent;
+	}
+	.heat-cell:hover {
+		outline-color: rgb(var(--ce-accent));
+		transform: scale(1.35);
+	}
+	#heat-tip {
+		position: fixed;
+		z-index: 60;
+		pointer-events: none;
+		max-width: 240px;
+		padding: 6px 8px;
+		background: rgb(var(--ce-bg-card));
+		border: 1px solid rgb(var(--ce-border) / 0.45);
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+		font-size: 11px;
+		line-height: 1.5;
+		color: rgb(var(--ce-text-primary));
+		opacity: 0;
+		transform: translate(-50%, -100%) translateY(-6px);
+		transition: opacity 120ms ease;
+	}
+	#heat-tip.visible {
+		opacity: 1;
+	}
+	#heat-tip .heat-tip-date {
+		font-family: var(--font-novecento);
+		font-size: 9px;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: rgb(var(--ce-text-hint));
+		margin-bottom: 2px;
+	}
+	#heat-tip .heat-tip-item {
+		display: block;
+		padding-left: 8px;
+		position: relative;
+		color: rgb(var(--ce-text-primary));
+	}
+	#heat-tip .heat-tip-item::before {
+		content: "";
+		position: absolute;
+		left: 0;
+		top: 0.6em;
+		width: 3px;
+		height: 1px;
+		background: rgb(var(--ce-accent));
+	}
+</style>
+
+<script>
+	let tip: HTMLDivElement | null = null;
+
+	function getTip(): HTMLDivElement {
+		if (!tip) {
+			tip = document.createElement("div");
+			tip.id = "heat-tip";
+			document.body.appendChild(tip);
+		}
+		return tip;
+	}
+
+	function hideTip() {
+		if (tip) tip.classList.remove("visible");
+	}
+
+	document.addEventListener("pointerover", (event) => {
+		const target = event.target as HTMLElement | null;
+		const cell = target?.closest<HTMLElement>("[data-heat]");
+		if (!cell) return;
+
+		const date = cell.dataset.heat ?? "";
+		const titles = (cell.dataset.heatItems ?? "").split("\n").filter(Boolean);
+		const root = cell.closest<HTMLElement>("[data-heatmap]");
+		const emptyLabel = root?.dataset.emptyLabel || "Nothing published";
+		const moreLabel = root?.dataset.moreLabel || "…and {count} more";
+		const el = getTip();
+
+		el.textContent = "";
+		const dateEl = document.createElement("div");
+		dateEl.className = "heat-tip-date";
+		dateEl.textContent = date;
+		el.appendChild(dateEl);
+
+		if (titles.length === 0) {
+			const empty = document.createElement("span");
+			empty.textContent = emptyLabel;
+			el.appendChild(empty);
+		} else {
+			for (const title of titles.slice(0, 4)) {
+				const item = document.createElement("span");
+				item.className = "heat-tip-item";
+				item.textContent = title;
+				el.appendChild(item);
+			}
+			if (titles.length > 4) {
+				const more = document.createElement("span");
+				more.className = "heat-tip-item";
+				more.textContent = moreLabel.replace(
+					"{count}",
+					String(titles.length - 4),
+				);
+				el.appendChild(more);
+			}
+		}
+
+		el.classList.add("visible");
+
+		const rect = cell.getBoundingClientRect();
+		const tipWidth = el.offsetWidth;
+		const tipHeight = el.offsetHeight;
+		let left = rect.left + rect.width / 2;
+		left = Math.max(
+			tipWidth / 2 + 8,
+			Math.min(window.innerWidth - tipWidth / 2 - 8, left),
+		);
+
+		const placeBelow = rect.top - tipHeight - 6 < 8;
+		el.style.left = `${left}px`;
+		el.style.top = `${placeBelow ? rect.bottom : rect.top}px`;
+		el.style.transform = placeBelow
+			? "translate(-50%, 6px)"
+			: "translate(-50%, -100%) translateY(-6px)";
+	});
+
+	document.addEventListener("pointerout", (event) => {
+		const target = event.target as HTMLElement | null;
+		if (target?.closest("[data-heat]")) hideTip();
+	});
+
+	window.addEventListener("scroll", hideTip, { passive: true });
+</script>

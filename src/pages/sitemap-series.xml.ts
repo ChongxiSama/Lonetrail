@@ -1,8 +1,9 @@
 import { getCollection } from "astro:content";
+import { SITE_URL } from "@constants/site";
 import type { APIRoute } from "astro";
 
 export const GET: APIRoute = async ({ site }) => {
-	const siteUrl = site?.toString() || "https://your-site.com/";
+	const siteUrl = site?.toString() || SITE_URL;
 
 	const series = await getCollection("seri");
 	const specs = await getCollection("spec");

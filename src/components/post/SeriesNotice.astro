@@ -1,19 +1,28 @@
 ---
 import { getCollection } from "astro:content";
-import Button from "../ui/Button";
 import I18nKey from "../../i18n/i18nKey";
+import { DEFAULT_LOCALE, type Locale, localizePath } from "../../i18n/locales";
 import { i18n } from "../../i18n/translation";
+import Button from "../ui/Button";
 
 interface Props {
 	tags?: string[];
 	category?: string | null;
+	lang?: Locale;
 }
 
-const { tags = [], category = null } = Astro.props;
+const { tags = [], category = null, lang = DEFAULT_LOCALE } = Astro.props;
+const t = (key: I18nKey) => i18n(key, lang);
 
 const allSeries = await getCollection("seri");
+const isEnglish = (entry: { filePath?: string }) =>
+	entry.filePath?.endsWith(".en.md") === true;
+const localizedSeries = allSeries.filter((entry) =>
+	lang === "en" ? isEnglish(entry) : !isEnglish(entry),
+);
+const pool = localizedSeries.length > 0 ? localizedSeries : allSeries;
 
-const matchedSeries = allSeries.find((seri) => {
+const matchedSeries = pool.find((seri) => {
 	const { filter } = seri.data;
 	if (!filter) return false;
 	if (filter.tag && tags.includes(filter.tag)) return true;
@@ -22,50 +31,47 @@ const matchedSeries = allSeries.find((seri) => {
 });
 
 if (!matchedSeries) return null;
+
+const seriesSlug = (matchedSeries.filePath?.split("/").pop() ?? matchedSeries.id)
+	.replace(/\.en\.md$/, "")
+	.replace(/\.md$/, "");
 ---
 
-<div class="relative w-full max-w-[840px] group border-t border-lt-border/10">
-    <div class="relative overflow-hidden bg-lt-bg paper-texture px-6 md:px-16 py-10">
-        
-        {/* 装饰性背景水印 */}
+<div class="relative w-full max-w-[840px] group">
+    <div class="relative overflow-hidden bg-page paper-texture shadow-2xl px-6 md:px-16 py-10">
+
         <div class="absolute -right-6 -bottom-8 opacity-[0.02] select-none pointer-events-none group-hover:opacity-[0.04] transition-opacity">
-            <span class="font-display text-[120px] uppercase italic font-black leading-none">
+            <span class="font-deco text-[120px] uppercase italic font-black leading-none">
                 {matchedSeries.id}
             </span>
         </div>
 
         <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
             <div class="flex-1 space-y-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-[3px] h-[12px] bg-lt-accent"></div>
-                    <span class="font-mono text-[10px] md:text-[11px] font-black tracking-[0.3em] text-lt-ink uppercase">
-                        Series_Associated // {i18n(I18nKey.seriesLabel)}
+                <div class="flex items-center gap-2">
+                    <div class="w-[3px] h-[10px] bg-accent"></div>
+                    <span class="font-deco text-[10px] tracking-[0.25em] font-bold text-primary uppercase">
+                        Series_Associated
                     </span>
+                    <div class="flex-1 h-px bg-hover/40"></div>
                 </div>
-                
+
                 <div class="space-y-2">
-                    <h3 class="font-cn text-[24px] md:text-[28px] leading-tight font-black text-lt-ink m-0 tracking-tight uppercase">
+                    <h3 class="font-heading text-[24px] md:text-[28px] leading-tight font-black text-primary m-0 tracking-tight uppercase">
                         {matchedSeries.data.title}
                     </h3>
-                    <p class="font-cn text-[13px] md:text-[14px] leading-relaxed text-lt-ink/50 m-0 max-w-[500px]">
-                        {i18n(I18nKey.seriesDescription)}
+                    <p class="font-cn text-[13px] md:text-[14px] leading-relaxed text-primary/50 m-0 max-w-[500px]">
+                        {t(I18nKey.seriesDescription)}
                     </p>
                 </div>
             </div>
 
             <div class="flex items-center">
-                <Button as="a" href={`/seri/${matchedSeries.id}/`} variant="solid" className="px-6 py-3 shadow-lg hover:shadow-lt-accent/20 duration-300 flex items-center gap-3 group/btn">
-                    {i18n(I18nKey.seriesOpen)}
+                <Button as="a" href={localizePath(`/seri/${seriesSlug}/`, lang)} variant="solid" className="px-6 py-3 shadow-lg hover:shadow-accent/20 duration-300 flex items-center gap-3 group/btn">
+                    {t(I18nKey.seriesOpen)}
                     <span class="group-hover/btn:translate-x-1 transition-transform">→</span>
                 </Button>
             </div>
-        </div>
-
-        {/* 底部三色条 */}
-        <div class="absolute bottom-0 left-0 right-0 h-[3px] flex opacity-20">
-            <div class="bg-rl-teal w-1/3"></div>
-            <div class="bg-rl-gold w-1/3"></div>
-            <div class="bg-rl-red w-1/3"></div>
         </div>
     </div>
 </div>

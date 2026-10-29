@@ -1,18 +1,26 @@
 ---
 import SubscribePage from "@components/pages/SubscribePage";
+import { SITE_URL } from "@constants/site";
 import Layout from "@layouts/Layout.astro";
+import { buildAtomFeed } from "@utils/feed-builder";
 import I18nKey from "../i18n/i18nKey";
+import { resolveLocale } from "../i18n/locales";
+import { getSiteTitle } from "../i18n/site";
 import { i18n } from "../i18n/translation";
-import { siteConfig } from "../config";
-import "../styles/cepato.css";
 
-const subscribeLabel = i18n(I18nKey.subscribe);
-const pageTitle = `${subscribeLabel} - ${siteConfig.title}`;
-const metaDescription = `${siteConfig.title} - ${subscribeLabel}`;
+const locale = resolveLocale(Astro.currentLocale, Astro.url.pathname);
+const subscribeLabel = i18n(I18nKey.subscribe, locale);
+const pageTitle = `${subscribeLabel} - ${getSiteTitle(locale)}`;
+const metaDescription = `${getSiteTitle(locale)} - ${subscribeLabel}`;
+const feed = await buildAtomFeed(Astro.site?.toString() || SITE_URL, locale);
+const feedLines = feed.split("\n");
 ---
 
 <Layout title={pageTitle} description={metaDescription}>
-	<div class="py-12 md:py-16 flex flex-col items-center gap-0 overflow-x-hidden">
-		<SubscribePage client:load />
-	</div>
+		<SubscribePage
+			client:visible
+			totalLines={feedLines.length}
+			previewLines={feedLines.slice(0, 120)}
+			lang={locale}
+		/>
 </Layout>

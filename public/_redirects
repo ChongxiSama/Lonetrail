@@ -1,0 +1,6 @@
+# Legacy date-based post URLs -> slug URLs
+/posts/:year/:month/:day/:slug/  /posts/:slug/  301
+/posts/:year-:month/:day/:slug/  /posts/:slug/  301
+
+# Old pagination pattern
+/page/*  /  301

@@ -2,18 +2,16 @@
 import { type CollectionEntry, getCollection, render } from "astro:content";
 import Markdown from "../../components/post/Markdown.astro";
 import Button from "../../components/ui/Button";
-import MainGridLayout from "../../layouts/MainGridLayout.astro";
+import I18nKey from "../../i18n/i18nKey";
+import { localizePath, resolveLocale } from "../../i18n/locales";
+import { i18n } from "../../i18n/translation";
+import Layout from "../../layouts/Layout.astro";
 export async function getStaticPaths() {
 	const specs = await getCollection("spec");
 	return specs
-		.filter((s) => s.id.startsWith("about-"))
+		.filter((s) => s.id.startsWith("about-") && !s.filePath?.endsWith(".en.md"))
 		.map((spec) => ({
-			params: {
-				id: spec.id
-					.replace("about-", "")
-					.replace(".md", "")
-					.replace(".mdx", ""),
-			},
+			params: { id: spec.id.slice("about-".length) },
 			props: { spec },
 		}));
 }
@@ -21,22 +19,34 @@ interface Props {
 	spec: CollectionEntry<"spec">;
 }
 const { spec } = Astro.props;
-const { Content } = await render(spec);
+const locale = resolveLocale(Astro.currentLocale, Astro.url.pathname);
+const specId = `about-${Astro.params.id}`;
+const specEntries = await getCollection("spec");
+const localized =
+	locale === "en"
+		? specEntries.find((s) => s.filePath?.endsWith(`${specId}.en.md`))
+		: undefined;
+const entry = localized ?? spec;
+const { Content } = await render(entry);
 ---
-<MainGridLayout title={spec.data.title} description={spec.data.description}>
-    <div class="flex w-full rounded-[var(--radius-large)] overflow-hidden relative mb-4">
-        <article class="card-base z-10 px-6 md:px-9 py-6 relative w-full">
-            <h1 class="sr-only">{spec.data.title}</h1>
+<Layout title={entry.data.title} description={entry.data.description}>
+    <div class="relative w-full max-w-[840px] bg-page paper-texture shadow-2xl px-6 md:px-16 py-10 overflow-hidden">
+        <div class="absolute -top-1 -left-1 w-3 h-3 border-t border-l border-primary z-20"></div>
+        <div class="absolute -top-1 -right-1 w-3 h-3 border-t border-r border-primary z-20"></div>
+        <div class="absolute -bottom-1 -left-1 w-3 h-3 border-b border-l border-primary z-20"></div>
+        <div class="absolute -bottom-1 -right-1 w-3 h-3 border-b border-r border-primary z-20"></div>
+        <article class="z-10 relative">
+            <h1 class="sr-only">{entry.data.title}</h1>
             <div class="prose custom-md dark:prose-invert max-w-none">
                 <Markdown class="mt-0">
                     <Content />
                 </Markdown>
             </div>
             <div class="mt-12 pt-6 border-t border-dashed border-black/10 dark:border-white/10 flex justify-center">
-                <Button as="a" href="/about/" variant="unstyled" class="btn-regular rounded-full px-6 py-2 text-sm font-bold bg-primary/10 text-primary hover:bg-primary/20 transition-all">
-                    View Full About Page
+                <Button as="a" href={localizePath("/about/", locale)} variant="unstyled" class="btn-regular rounded-full px-6 py-2 text-sm font-bold bg-primary/10 text-primary hover:bg-primary/20 transition-all">
+                    {i18n(I18nKey.viewFullAbout, locale)}
                 </Button>
             </div>
         </article>
     </div>
-</MainGridLayout>
+</Layout>

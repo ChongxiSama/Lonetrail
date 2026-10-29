@@ -1,9 +1,11 @@
+import { SITE_URL } from "@constants/site";
 import type { APIRoute } from "astro";
 export const GET: APIRoute = async ({ site }) => {
-	const siteUrl = site?.toString() || "https://your-site.com/";
+	const siteUrl = site?.toString() || SITE_URL;
 	const sitemaps = [
 		"sitemap-pages.xml",
 		"sitemap-posts.xml",
+		"sitemap-essays.xml",
 		"sitemap-series.xml",
 		"sitemap-taxonomies.xml",
 	];

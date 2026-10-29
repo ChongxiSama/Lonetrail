@@ -1,14 +1,16 @@
 ---
-import RpStamp from "./RpStamp.astro";
-import StripeFooter from "./StripeFooter.astro";
+import I18nKey from "../../i18n/i18nKey";
+import { DEFAULT_LOCALE, type Locale } from "../../i18n/locales";
+import { i18n } from "../../i18n/translation";
 
 interface Props {
 	currentPage: number;
 	totalPages: number;
 	prevHref?: string;
 	nextHref?: string;
-	brandLabel?: string;
-	footerLabel?: string;
+	basePath?: string;
+	firstHref?: string;
+	lang?: Locale;
 }
 
 const {
@@ -16,69 +18,101 @@ const {
 	totalPages,
 	prevHref,
 	nextHref,
-	brandLabel = "Rhine Lab Pioneer Division",
-	footerLabel = "Field Report Archive",
+	basePath = "/",
+	firstHref = "/",
+	lang = DEFAULT_LOCALE,
 } = Astro.props;
+const pageLabel = (page: number) =>
+	i18n(I18nKey.pageLabel, lang).replace("{page}", String(page));
+
+function getPageHref(page: number): string {
+	return page === 1 ? firstHref : `${basePath}${page}/`;
+}
+
+type PageItem = number | "gap";
+
+function getPageItems(current: number, total: number): PageItem[] {
+	if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+	let start = Math.max(2, current - 1);
+	let end = Math.min(total - 1, current + 1);
+	if (current <= 2) {
+		start = 2;
+		end = 3;
+	} else if (current >= total - 1) {
+		start = total - 3;
+		end = total - 1;
+	}
+	const items: PageItem[] = [1];
+	if (start > 2) items.push("gap");
+	for (let page = start; page <= end; page++) items.push(page);
+	if (end < total - 1) items.push("gap");
+	items.push(total);
+	return items;
+}
+
+const items = getPageItems(currentPage, totalPages);
+const currentLabel = currentPage.toString().padStart(2, "0");
+const totalLabel = totalPages.toString().padStart(2, "0");
 ---
-<div class="relative w-full max-w-[840px] bg-lt-bg paper-texture shadow-2xl px-8 sm:px-16 py-10 overflow-hidden">
-    <div class="relative z-10 flex justify-between items-center">
-        {prevHref ? (
-            <a
-                href={prevHref}
-                class="font-mono text-[11px] font-bold text-lt-ink uppercase tracking-widest hover:text-lt-accent transition-colors"
-            >
-                ← Prev
-            </a>
-        ) : (
-            <span class="font-mono text-[11px] font-bold text-lt-ghost uppercase tracking-widest cursor-not-allowed">
-                ← Prev
-            </span>
-        )}
+<div class="relative w-full max-w-[840px] bg-page paper-texture shadow-2xl px-6 py-5 md:px-12 overflow-hidden">
+	<div class="relative z-10 flex items-center justify-between gap-2">
+		{prevHref ? (
+			<a
+				href={prevHref}
+				class="group/prev -mx-2 flex min-h-[44px] items-center gap-1.5 px-2 font-deco text-[11px] font-bold uppercase tracking-widest text-primary transition-colors hover:text-accent"
+			>
+				<span class="inline-block transition-transform duration-200 group-hover/prev:-translate-x-0.5">←</span> Prev
+			</a>
+		) : (
+			<span class="-mx-2 flex min-h-[44px] cursor-not-allowed items-center gap-1.5 px-2 font-deco text-[11px] font-bold uppercase tracking-widest text-secondary/50">
+				← Prev
+			</span>
+		)}
 
-        <div class="flex flex-col items-center gap-3">
-            <span class="font-mono text-[11px] text-lt-muted font-bold tracking-widest uppercase">
-                Page {currentPage.toString().padStart(2, "0")} /{" "}
-                {totalPages.toString().padStart(2, "0")}
-            </span>
-            <div class="flex gap-1.5">
-                {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => (
-                    <div
-                        class:list={[
-                            "w-1.5 h-1.5",
-                            (i + 1 === currentPage) ? "bg-lt-accent" : "border border-lt-border"
-                        ]}
-                    ></div>
-                ))}
-            </div>
-        </div>
+		<div class="flex items-center gap-0.5">
+			{items.map((item) =>
+				item === "gap" ? (
+					<span class="flex h-[44px] w-5 select-none items-center justify-center font-deco text-[11px] text-secondary/50">…</span>
+				) : item === currentPage ? (
+					<span
+						class="flex h-[44px] w-[32px] items-center justify-center font-deco text-[11px] font-bold tracking-wider text-accent sm:w-[38px]"
+						aria-current="page"
+						aria-label={pageLabel(item)}
+					>
+						[{item.toString().padStart(2, "0")}]
+					</span>
+				) : (
+					<a
+						href={getPageHref(item)}
+						aria-label={pageLabel(item)}
+						class="flex h-[44px] w-[32px] items-center justify-center font-deco text-[11px] tracking-wider text-primary/60 transition-colors hover:bg-hero/[0.04] hover:text-accent sm:w-[38px]"
+					>
+						{item.toString().padStart(2, "0")}
+					</a>
+				),
+			)}
+		</div>
 
-        {nextHref ? (
-            <a
-                href={nextHref}
-                class="font-mono text-[11px] font-bold text-lt-ink uppercase tracking-widest hover:text-lt-accent transition-colors"
-            >
-                Next →
-            </a>
-        ) : (
-            <span class="font-mono text-[11px] font-bold text-lt-ghost uppercase tracking-widest cursor-not-allowed">
-                Next →
-            </span>
-        )}
-    </div>
+		{nextHref ? (
+			<a
+				href={nextHref}
+				class="group/next -mx-2 flex min-h-[44px] items-center gap-1.5 px-2 font-deco text-[11px] font-bold uppercase tracking-widest text-primary transition-colors hover:text-accent"
+			>
+				Next <span class="inline-block transition-transform duration-200 group-hover/next:translate-x-0.5">→</span>
+			</a>
+		) : (
+			<span class="-mx-2 flex min-h-[44px] cursor-not-allowed items-center gap-1.5 px-2 font-deco text-[11px] font-bold uppercase tracking-widest text-secondary/50">
+				Next →
+			</span>
+		)}
+	</div>
 
-    <div class="relative z-10 mt-10 pt-8 border-t border-lt-ink flex justify-between items-end">
-        <div class="flex items-center gap-4">
-            <RpStamp />
-            <div class="font-mono text-[11px] text-lt-ghost leading-none uppercase tracking-tighter text-center md:text-left">
-                {brandLabel}
-                <br />
-                {footerLabel}
-            </div>
-        </div>
-        <span class="font-mono text-[11px] text-lt-ghost uppercase tracking-widest">
-            // End of Index
-        </span>
-    </div>
-
-    <StripeFooter />
+	<div class="relative z-10 mt-3 flex items-center justify-between border-t border-border/40 pt-3">
+		<span class="font-deco text-[10px] uppercase tracking-[0.25em] text-hint">
+			Index // Pagination
+		</span>
+		<span class="font-deco text-[10px] uppercase tracking-widest text-hint">
+			Page {currentLabel} / {totalLabel}
+		</span>
+	</div>
 </div>

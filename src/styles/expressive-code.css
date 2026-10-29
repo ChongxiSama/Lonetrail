@@ -1,4 +1,4 @@
-/* ═══ RHINE LAB LONE TRAIL CODE BLOCK STYLES ═══ */
+/* ═══ LONETRAIL CODE BLOCK STYLES ═══ */
 
 .expressive-code {
     margin: 2.5rem 0 !important;
@@ -20,6 +20,12 @@
 
 .expressive-code pre {
     position: relative;
+    background-color: var(--ec-codeBg, #1A1814) !important;
+    border-radius: 0 !important;
+    font-size: var(--ec-codeFontSize, 13px);
+    line-height: var(--ec-codeLineHt, 1.7);
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
     /* 模拟扫描线纹理 */
     background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%) !important;
     background-size: 100% 4px !important;
@@ -42,15 +48,15 @@
 .expressive-code pre::before {
     top: 0.25rem;
     left: 0.5rem;
-    border-top: 1px solid #D4621A;
-    border-left: 1px solid #D4621A;
+    border-top: 1px solid rgb(var(--ce-accent));
+    border-left: 1px solid rgb(var(--ce-accent));
 }
 
 .expressive-code pre::after {
     bottom: 0.5rem;
     right: 0.5rem;
-    border-bottom: 1px solid #D4621A;
-    border-right: 1px solid #D4621A;
+    border-bottom: 1px solid rgb(var(--ce-accent));
+    border-right: 1px solid rgb(var(--ce-accent));
 }
 
 /* 行号列适配 */
@@ -81,7 +87,7 @@
 }
 
 /* 页眉背景微调 */
-.rhine-badge {
+.lonetrail-badge {
     height: 2.6rem !important; /* 固定高度以容纳按钮 */
     box-sizing: border-box;
 }
